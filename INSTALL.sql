@@ -1,0 +1,1 @@
+ALTER TABLE orders ADD downloaded_ship ENUM( 'yes', 'no' ) NOT NULL DEFAULT 'no';

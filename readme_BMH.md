@@ -1,6 +1,4 @@
-# export_shipping_information
- Export Shipping Information
- Module Name
+Module Name
 ==================
 Export Shipping Information
 
@@ -51,7 +49,6 @@ BMH 2023-01-15
         ln374 include other discount types - only picks up first one
     \admin\includes\languages\extra_definitions
         create zc158 lang file lang-shipping_export.php
-
 
 
 

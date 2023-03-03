@@ -1,0 +1,34 @@
+Module Name
+==================
+Export Shipping Information
+
+
+Version Date
+============
+v 1.4.1 2023-01
+
+Updated by:
+=======
+OldNGrey (BMH)
+
+Compatibility
+=============
+Compatible with Zen Cart v1.5.8 PHP 8.1
+http://www.zen-cart.com
+
+Support Thread
+======
+http://www.zen-cart.com/forum/showthread.php?t=75406
+
+
+Description
+===========
+This module enables you, from within the Admin, to export shipping information in various formats for orders placed.
+
+What you do with that file is up to you. Some ideas: Drop shipping fulfillment, Analysis of data in Excel spreadsheets,
+bulk printing of labels, bulk printing of envelopes, etc.. you get the idea. 
+
+
+
+
+
