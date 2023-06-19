@@ -8,7 +8,9 @@
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: shipping_export.php, v 1.3.2 08.05.2010 11:41 Eric Leuenberger econcepts@zencartoptimization.com$
  * Thanks to dhcernese and Scott Wilson (That Software Guy) for contributing various portions that contained several bug-fixes.
+  Version: 1.4.1c 2023-06-17 BMH (OldNGrey)
  */
+// BMH Version Number - set on line 53
 // BMH 2021-10 correct version number
 // BMH 2022-05-10 line 321 added fields to group by
 // BMH  line 53 date format
@@ -17,8 +19,15 @@
 //                  ln 871 undefined offset
 //                  ln148 isset; ln707 isset; ln977 isset($_POST['order_status_setting'])
 //      2022-11-30  ln Undefined index: dload_include
-//BMH 2023-03-03 reorder to match reconciliation spreadsheet; add line tax space; negative symbol for discount
+//BMH 2023-03-03 reorder to match reconciliation spreadsheet;
+//              add line tax space; negative symbol for discount
 //                  ln1034 default most commonly used check boxes to checked
+// BMH ln633 include other discount types - only picks up first one
+// BMH ln633 included ot_paymentmodulefee; accumulate discounts and make negative number
+//               select DISTINCT to obtain only one values where multiple discounts are applied and remove orders products from inner join
+//      ln128 +ln509 included products_tax/100
+//      ln319 moved shipping total to follow after subtotal heading
+//      ln636 moved shipping value to follow after subtotal value
 
  if (!isset($success_message)) {$success_message ='';}
  if (!isset($linevalue)) {$linevalue ='';} // BMH line 450
@@ -47,8 +56,8 @@
  if (!isset($prod_details_checked)) {$prod_details_checked ='';} // BMH line 987
  if (!isset($dload_include)) {$dload_include ='';} // BMH line 144,574,615
 
-define('VERSION', '1.4.1a');
-define('EOVERSION', '1.4.1a');
+define('VERSION', '1.4.1c');
+define('SEOVERSION', '1.4.1c');
 require('includes/application_top.php');
 require(DIR_WS_CLASSES . 'currencies.php');
 $currencies = new currencies();
@@ -114,7 +123,7 @@ if (isset($_POST['download_csv']))
 
       $order_info = "SELECT o.orders_id, customers_email_address, delivery_name, delivery_company, delivery_street_address, delivery_suburb,
         delivery_city, delivery_postcode, delivery_state, delivery_country, shipping_method, customers_telephone, order_total, op.products_model,
-        products_name, op.products_price, final_price, op.products_quantity, date_purchased, ot.value, orders_products_id, order_tax,
+        products_name, op.products_price, final_price, op.products_quantity, op.products_tax, date_purchased, ot.value, orders_products_id, order_tax,
         o.orders_status, o.payment_method";
       if (isset($_POST['iso_country2_code']) == 1) {         $order_info = $order_info . ", cc.countries_iso_code_2";      };
       if (isset($_POST['iso_country3_code']) == 1) {         $order_info = $order_info . ", cc.countries_iso_code_3";      };
@@ -307,9 +316,9 @@ if (isset($_POST['download_csv']))
     // BMH add reordered headings
         $str_header = $str_header . ",Line cost";  // BMH ADDITION
         $str_header = $str_header . ",Line tax";  // BMH ADDITION
-        if (isset($_POST['shiptotal']) == 1) { $str_header = $str_header . ",Shipping Total"; };    // BMH isset
         //if (isset($_POST['order_tax']) == 1) { $str_header = $str_header . ",Order Tax"; }; // BMH isset
         if (isset($_POST['order_subtotal']) == 1) { $str_header = $str_header . ",Order Subtotal"; };   // BMH isset
+        if (isset($_POST['shiptotal']) == 1) { $str_header = $str_header . ",Shipping Total"; };    // BMH isset
         if (isset($_POST['order_discount']) == 1) { $str_header = $str_header . ",Order Discount"; };   // BMH isset
         if (isset($_POST['order_total']) == 1) { $str_header = $str_header . ",Order Total"; }; // BMH isset
         if (isset($_POST['order_tax']) == 1) { $str_header = $str_header . ",Order Tax"; }; // BMH isset
@@ -461,7 +470,7 @@ if (isset($_POST['download_csv']))
          { // if records were found
             $str_export .= $FIELDSEPARATOR . $FIELDSTART . $orders_status->fields['orders_status_name'] . $FIELDEND; //add discount amt to export string
          } else
-         { // add a BLANK field to the export file for "consistancy"
+         { // add a BLANK field to the export file for "consistency"
             $str_export .= $FIELDSEPARATOR . $FIELDSTART . $FIELDEND; // add blank space for filler
          } // end if
       } // End if for determining if order discount was selected to export.
@@ -499,8 +508,9 @@ if (isset($_POST['download_csv']))
             $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['final_price'] . $FIELDEND . $FIELDSEPARATOR;
             // BMH
             $linevalue = $order_details->fields['products_quantity'] * $order_details->fields['final_price'];
+            $linetax = $order_details->fields['products_tax']/100 * $order_details->fields['final_price'];
             $str_export .= $FIELDSEPARATOR . $FIELDSTART . $linevalue . $FIELDEND;
-            $str_export .= $FIELDSEPARATOR . $FIELDSTART . $linetax . $FIELDEND;
+            $str_export .= $FIELDSEPARATOR . $FIELDSTART . $linetax .  $FIELDEND;
             // BMH
             $product_attributes_rows = "SELECT Count(*) as num_rows
                 FROM " . TABLE_ORDERS_PRODUCTS_ATTRIBUTES . "
@@ -570,9 +580,7 @@ if (isset($_POST['download_csv']))
       } // End if to determine if the order details should be added to the export string.
     // BMH extend the export string XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-    if (isset($_POST['shiptotal']) == 1) {
-        $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['value'] . $FIELDEND;
-        };   // BMH isset
+
 
 /*    if (isset($_POST['order_tax']) == 1) {
         $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['order_tax'] . $FIELDEND;
@@ -615,7 +623,7 @@ if (isset($_POST['download_csv']))
             //$num_rows = mysql_num_rows($orders_subtotal_query);
             if ( $num_rows > 0)
             {
-                $str_export .= $FIELDSEPARATOR . $FIELDSTART . $orders_subtotal->fields['value'] . $FIELDEND; //add discount amt to export string
+                $str_export .= $FIELDSEPARATOR . $FIELDSTART . $orders_subtotal->fields['value'] . $FIELDEND; //add subtotal amt to export string
             } else
             { // add a BLANK field to the export file for "consistancy"
                 $str_export .= $FIELDSEPARATOR . $FIELDSTART . $FIELDEND; // add blank space for filler
@@ -624,14 +632,21 @@ if (isset($_POST['download_csv']))
 
         } // eof sub-totals
 
+    if (isset($_POST['shiptotal']) == 1) {
+        $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['value'] . $FIELDEND;
+        };   // BMH isset
+
+
         if (isset($_POST['order_discount']) == 1)   // BMH isset
         { // if order discount was selected, then run the query to pull the data for adding it to the export string.
-            // Run a query to pull the Order Discount total if present
-            $orders_discount_query = "SELECT o.orders_id, ot.value
-                FROM (". TABLE_ORDERS ." o LEFT JOIN ". TABLE_ORDERS_PRODUCTS ." op ON o.orders_id = op.orders_id), ". TABLE_ORDERS_TOTAL ." ot
+            // Run a query to pull the Order Discount total if present ; no discount on order-product so remove from inner join not all discounts are negaitive numbers for force by -ABS
+           $orders_discount_query = "SELECT DISTINCT o.orders_id,  sum(-ABS(round(ot.value,2))) AS value
+                FROM (". TABLE_ORDERS ." o LEFT JOIN  ". TABLE_ORDERS_TOTAL ." ot ON o.orders_id = ot.orders_id)
                 WHERE o.orders_id = ot.orders_id
-                AND ot.class = 'ot_coupon'
-                AND ot.orders_id = " . $order_details->fields['orders_id'] . "";
+                AND ot.class IN  ('ot_coupon' , 'ot_custom', 'ot_group_pricing', 'ot_payment_type', 'ot_paymentmodulefee')
+                AND ot.orders_id = " . $order_details->fields['orders_id'] . ""; /* BMH changed AND ot.class = 'ot_coupon' TO include other discounts
+                                                                                    AND ot.class IN  ('ot_coupon' , 'ot_custom', 'ot_group_pricing',
+                                                                                    'ot_payment_type' , 'ot_paymentmodule) */
             if ($_POST['dload_include'] != 1)
             {
                 $orders_discount_query = $orders_discount_query . " AND downloaded_ship='no'";
@@ -653,7 +668,7 @@ if (isset($_POST['download_csv']))
             $num_rows = $orders_discount->RecordCount();
             if ($num_rows > 0)
             { // if records were found
-                $str_export .= $FIELDSEPARATOR . $FIELDSTART . '-' .$orders_discount->fields['value'] . $FIELDEND; //add discount amt to export string // BMH add negative symbol
+                $str_export .= $FIELDSEPARATOR . $FIELDSTART .  $orders_discount->fields['value'] . $FIELDEND; //add discount amt to export string // BMH add negative symbol
             } else
             { // add a BLANK field to the export file for "consistancy"
                 $str_export .= $FIELDSEPARATOR . $FIELDSTART . $FIELDEND; // add blank space for filler
@@ -835,8 +850,8 @@ if (isset($_POST['download_csv']))
                                     <table border="0" width="100%" cellspacing="0" cellpadding="0">
                                         <tr>
                                             <td valign="top"><span class="pageHeading"><?php echo HEADING_SHIPPING_EXPORT_TITLE; ?></span>
-                                                <td align="right">EOVERSION: <?php // BMH
-                                                echo EOVERSION; ?> </td>
+                                                <td align="right">SEOVERSION: <?php // BMH
+                                                echo SEOVERSION; ?> </td>
                                             </td>
                                             <td align="right"><?php echo zen_draw_separator('pixel_trans.gif', HEADING_IMAGE_WIDTH, HEADING_IMAGE_HEIGHT); ?></td>
                                         </tr>

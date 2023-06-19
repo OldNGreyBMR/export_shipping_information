@@ -1,3 +1,10 @@
+WARNING
+=======
+As of 2023 this has NOT been tested on any Zen Cart version below 1.5.7.
+Only install on a TEST system.
+
+============================
+
 # v1.3.2.1 update
 Follow the instructions in readme.txt replacing step 1 with the following minor modifications.
 

@@ -1,3 +1,7 @@
+OLD README file - NOT Updated
+Included for historic purposes only
+------------------------------------
+
 Module Name
 ==================
 Export Shipping Information

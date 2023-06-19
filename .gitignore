@@ -3,9 +3,11 @@ bin-debug/
 bin-release/
 [Oo]bj/
 [Bb]in/
+nppBackup/
 
 # Other files and folders
 .settings/
+.dev-*
 
 # Executables
 *.swf
