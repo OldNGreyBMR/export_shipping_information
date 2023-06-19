@@ -57,7 +57,7 @@
  if (!isset($dload_include)) {$dload_include ='';} // BMH line 144,574,615
 
 define('VERSION', '1.4.1c');
-define('SEOVERSION', '1.4.1c');
+define('ESIVERSION', '1.4.1c');
 require('includes/application_top.php');
 require(DIR_WS_CLASSES . 'currencies.php');
 $currencies = new currencies();
@@ -850,8 +850,8 @@ if (isset($_POST['download_csv']))
                                     <table border="0" width="100%" cellspacing="0" cellpadding="0">
                                         <tr>
                                             <td valign="top"><span class="pageHeading"><?php echo HEADING_SHIPPING_EXPORT_TITLE; ?></span>
-                                                <td align="right">SEOVERSION: <?php // BMH
-                                                echo SEOVERSION; ?> </td>
+                                                <td align="right">ESIVERSION: <?php // BMH
+                                                echo ESIVERSION; ?> </td>
                                             </td>
                                             <td align="right"><?php echo zen_draw_separator('pixel_trans.gif', HEADING_IMAGE_WIDTH, HEADING_IMAGE_HEIGHT); ?></td>
                                         </tr>
