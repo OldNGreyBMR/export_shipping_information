@@ -8,7 +8,7 @@
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: shipping_export.php, v 1.3.2 08.05.2010 11:41 Eric Leuenberger econcepts@zencartoptimization.com$
  * Thanks to dhcernese and Scott Wilson (That Software Guy) for contributing various portions that contained several bug-fixes.
-  Version: 1.4.1c 2023-06-17 BMH (OldNGrey)
+  Version: 1.4.1d 2023-08-29 BMH (OldNGrey)
  */
 // BMH Version Number - set on line 53
 // BMH 2021-10 correct version number
@@ -28,6 +28,9 @@
 //      ln128 +ln509 included products_tax/100
 //      ln319 moved shipping total to follow after subtotal heading
 //      ln636 moved shipping value to follow after subtotal value
+// 2023-08-29 shipping method heading, comments, status correct placement
+//       clean product name if double quotes included as per abbr for inch
+//
 
  if (!isset($success_message)) {$success_message ='';}
  if (!isset($linevalue)) {$linevalue ='';} // BMH line 450
@@ -56,8 +59,8 @@
  if (!isset($prod_details_checked)) {$prod_details_checked ='';} // BMH line 987
  if (!isset($dload_include)) {$dload_include ='';} // BMH line 144,574,615
 
-define('VERSION', '1.4.1c');
-define('ESIVERSION', '1.4.1c');
+define('VERSION', '1.4.1d');
+define('ESIVERSION', '1.4.1d');
 require('includes/application_top.php');
 require(DIR_WS_CLASSES . 'currencies.php');
 $currencies = new currencies();
@@ -258,9 +261,13 @@ if (isset($_POST['download_csv']))
    if (isset($_POST['customers_telephone']) == 1) { // BMH isset
       $str_header = $str_header . ",Customers Telephone";
    };
-      if (isset($_POST['shipmethod']) == 1) {  // BMH isset
-      $str_header = $str_header . ",Shipping Method";
+      if (isset($_POST['orders_status_export']) == 1) {    // BMH isset
+      $str_header = $str_header . ",Order Status";
    };
+ /*     if (isset($_POST['shipmethod']) == 1) {  // BMH isset
+      $str_header = $str_header . ",Shipping Method";
+   }; // BMH remove as redundant
+   */
 /*   if (isset($_POST['order_total']) == 1) { // BMH isset
       $str_header = $str_header . ",Order Total";
    }; */
@@ -277,9 +284,7 @@ if (isset($_POST['download_csv']))
 /*   if (isset($_POST['payment_method']) == 1) {  // BMH isset
       $str_header = $str_header . ",Payment Method";
    };
-   if (isset($_POST['orders_status_export']) == 1) {    // BMH isset
-      $str_header = $str_header . ",Order Status";
-   }; */
+ */
    if (isset($_POST['iso_country2_code']) == 1) {   // BMH isset
       $str_header = $str_header . ",ISO Country Code 2";
    };
@@ -367,7 +372,7 @@ if (isset($_POST['download_csv']))
       if (isset($_POST['customers_telephone']) == 1) {         $str_export .= $FIELDSEPARATOR . $FIELDSTART . "'" .$order_details->fields['customers_telephone'] . $FIELDEND;      }; //BMH prepend single quote for excel
 //      if ($_POST['order_total'] == 1) {         $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['order_total'] . $FIELDEND;      };
 // BMH moved        if ($_POST['date_purchased'] == 1) { $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['date_purchased'] . $FIELDEND; };
-
+/* moved after iso code
         if (isset($_POST['order_comments']) == 1)
         {
             if ($_POST['filelayout'] == 2)
@@ -388,7 +393,7 @@ if (isset($_POST['download_csv']))
             $str_export .= $FIELDSEPARATOR . $FIELDSTART . str_replace(array("\r\n", "\r", "\n"), " ", $str_safequotes) . $FIELDEND; // Remove any line breaks in first comment and print to export string
          }
       }
-
+*/
       /***********************************************************************************************************************************/
 /* BMH copy to end      if ($_POST['order_tax'] == 1) {         $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['order_tax'] . $FIELDEND;       };
 
@@ -490,6 +495,28 @@ if (isset($_POST['download_csv']))
       }
       */
 //*************eof State Abbr Codes********************//
+// bof comments
+        if (isset($_POST['order_comments']) == 1)
+        {
+            if ($_POST['filelayout'] == 2)
+            { // 1 Product Per row RADIO
+                // BMH MySQLD added extra fields to avoid group by error
+                $orders_comments_query="SELECT *  FROM " . TABLE_ORDERS_STATUS_HISTORY . " WHERE orders_id = " . $order_details->fields['orders_id'] . "
+                GROUP BY orders_id, orders_status_id, orders_status_history_id, date_added, customer_notified, comments, updated_by
+                ORDER BY orders_status_history_id ASC";
+            $orders_comments = $db->Execute($orders_comments_query);
+            $str_safequotes = str_replace('"', "'", $orders_comments->fields['comments']); // replace quotes with single quotes if present
+            //$str_safequotes = $str_safequotes . str_replace(","," ",$str_safequotes); // replace commas with blank space if present
+            // dhc 16-Nov-2007 array("\r\n","\r","\n")
+            $str_export .= $FIELDSEPARATOR . $FIELDSTART . str_replace(array("\r\n", "\r", "\n"), " ", $str_safequotes) . $FIELDEND; // Remove any line breaks in first comment and print to export string
+         } else {
+            $str_safequotes = str_replace('"', "'", $order_details->fields['comments']); // replace quotes with single quotes if present
+            //$str_safequotes = $str_safequotes . str_replace(","," ",$str_safequotes); // replace commas with blank space if present
+            // dhc 16-Nov-2007 array("\r\n","\r","\n")
+            $str_export .= $FIELDSEPARATOR . $FIELDSTART . str_replace(array("\r\n", "\r", "\n"), " ", $str_safequotes) . $FIELDEND; // Remove any line breaks in first comment and print to export string
+         }
+      }
+// eof comments
       /***********************************************************************************************************************************/
     if ($_POST['date_purchased'] == 1)
         { $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['date_purchased'] . $FIELDEND; };
@@ -504,7 +531,10 @@ if (isset($_POST['download_csv']))
 
             $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['products_quantity'] . $FIELDEND;
             $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['products_model'] . $FIELDEND;
-            $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['products_name'] . $FIELDEND;
+            //$str_safequotes = str_replace('"', "'", $orders_comments->fields['comments']); // replace quotes with single quotes if present
+            //$str_safequotes = $str_safequotes . str_replace(","," ",$str_safequotes); // replace commas with blank space if present
+            $str_export .= $FIELDSEPARATOR . $FIELDSTART . (str_replace('"', " ",$order_details->fields['products_name'])) . $FIELDEND; // replace quotes with space if present
+            //$str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['products_name'] . $FIELDEND;
             $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['final_price'] . $FIELDEND . $FIELDSEPARATOR;
             // BMH
             $linevalue = $order_details->fields['products_quantity'] * $order_details->fields['final_price'];
