@@ -2,10 +2,9 @@ Module Name
 ==================
 **Export Shipping Information **
 
-
 Version Date
 ============
-v 1.4.1b 2023-06-17
+v 1.4.1d 2023-08-29
 
 Updated by:
 =======
@@ -29,9 +28,17 @@ What you do with that file is up to you. Some ideas: Drop shipping fulfillment, 
 bulk printing of labels, bulk printing of envelopes, etc., you get the idea. 
 Changes
 =======
+BMH 2023-08-29
+	set version to 1.4.1d
+	corrected shipping method heading
+	clean product name if double quotes included as per abbreviation for inch
+	
 BMH 2023-06-17
-    ln50 set version to 1.4.1b
+    ln50 set version to 1.4.1c
     discounts now include all (ot_coupon' , 'ot_custom', 'ot_group_pricing', 'ot_payment_type' , 'ot_paymentmodule) summed and made negative
+    DISTINCT values only returned for when multiple discounts applied
+    moved shipping total heading and values to follow after subtotal headings and values
+    line tax is now calculated
     
 BMH 2023-03-03
     admin\shipping_export.php
