@@ -342,9 +342,8 @@ if (isset($_POST['download_csv']))
       $str_export = $FIELDSTART . $order_details->fields['orders_id'] . $FIELDEND . $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['customers_email_address'] . $FIELDEND;
       if (isset($_POST['split_name']) == 1) {   // BMH isset
          $fullname = $order_details->fields['delivery_name'];
-         // BMHlist($first, $middle, $last) = preg_split("/[\s,]+/", $fullname);
-         list($first, $last) = preg_split("/[\s,]+/", $fullname);   // BMH remove middle
-         if (!$last) {
+          list($first, $middle, $last) = preg_split("/[\s,]+/", $fullname);
+         if (!$last) {                  // if last is blank use the middle name and remove the middle name
             $last = $middle;
             unset($middle);
          }
