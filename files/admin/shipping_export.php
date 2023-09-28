@@ -8,7 +8,7 @@
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: shipping_export.php, v 1.3.2 08.05.2010 11:41 Eric Leuenberger econcepts@zencartoptimization.com$
  * Thanks to dhcernese and Scott Wilson (That Software Guy) for contributing various portions that contained several bug-fixes.
-  Version: 1.4.1d 2023-08-29 BMH (OldNGrey)
+  Version: 1.4.2 2023-09-28 BMH (OldNGrey)
  */
 // BMH Version Number - set on line 53
 // BMH 2021-10 correct version number
@@ -30,6 +30,7 @@
 //      ln636 moved shipping value to follow after subtotal value
 // 2023-08-29 shipping method heading, comments, status correct placement
 //       clean product name if double quotes included as per abbr for inch
+// 2023-09-28 ln347 use case to determine words in name; 1 word = STOREPICKUP
 //
 
  if (!isset($success_message)) {$success_message ='';}
@@ -59,12 +60,17 @@
  if (!isset($prod_details_checked)) {$prod_details_checked ='';} // BMH line 987
  if (!isset($dload_include)) {$dload_include ='';} // BMH line 144,574,615
 
-define('VERSION', '1.4.1d');
-define('ESIVERSION', '1.4.1d');
+define('VERSION', '1.4.2');
+define('ESIVERSION', '1.4.2');
 require('includes/application_top.php');
 require(DIR_WS_CLASSES . 'currencies.php');
 $currencies = new currencies();
 include(DIR_WS_CLASSES . 'order.php');
+
+$fullname = '';
+$first = '';
+$middle = '';
+$last = '';
 
 // change destination here for path when using "save to file on server"
 if (!defined('DIR_FS_EMAIL_EXPORT')) define('DIR_FS_EMAIL_EXPORT', DIR_FS_CATALOG . 'images/uploads/');
@@ -339,14 +345,22 @@ if (isset($_POST['download_csv']))
 /* bof prepare data lines  */
    while (!$order_details->EOF) {
 
-      $str_export = $FIELDSTART . $order_details->fields['orders_id'] . $FIELDEND . $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['customers_email_address'] . $FIELDEND;
-      if (isset($_POST['split_name']) == 1) {   // BMH isset
-         $fullname = $order_details->fields['delivery_name'];
-          list($first, $middle, $last) = preg_split("/[\s,]+/", $fullname);
-         if (!$last) {                  // if last is blank use the middle name and remove the middle name
-            $last = $middle;
-            unset($middle);
-         }
+         $str_export = $FIELDSTART . $order_details->fields['orders_id'] . $FIELDEND . $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['customers_email_address'] . $FIELDEND;
+         if (isset($_POST['split_name']) == 1) {   // BMH isset
+            $fullname = $order_details->fields['delivery_name'];
+
+            switch (str_word_count($fullname) ) {
+                case 3:
+                    list($first, $middle, $last) = preg_split("/[\s,]+/", $fullname);
+                    break;
+                case 2:    
+                    list($first, $last) = preg_split("/[\s,]+/", $fullname);   // BMH remove middle
+                    break;
+                case 1:
+                    list($last) = preg_split("/[\s,]+/", $fullname);
+                    break;
+            }
+         
          $str_export .= $FIELDSEPARATOR . $FIELDSTART . $first . $FIELDEND . $FIELDSEPARATOR . $FIELDSTART . $last . $FIELDEND;
       } else {
          $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['delivery_name'] . $FIELDEND;
