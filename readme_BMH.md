@@ -26,6 +26,24 @@ This module enables you, from within the Admin, to export shipping information i
 
 What you do with that file is up to you. Some ideas: Drop shipping fulfillment, Analysis of data in Excel spreadsheets,
 bulk printing of labels, bulk printing of envelopes, etc., you get the idea. 
+Installation
+============
+Install / Ugrade: (From earlier release notes)
+=================
+1. Upload the entire contents of the "admin" folder to your website. All directories are already named for you and there are no files to overwrite so it should be easy.
+   NOTE: If you changed the name of your "admin" directory to something else, then upload
+         to that directory.
+
+2. Login Admin > Tools > Install SQL Patches and run the query (copy and paste into the admin to run) found in the "INSTALL.sql" file provided with the download.
+   NOTE: If you are upgrading from a previous version, you do not need to re-run this SQL command as your
+         database should already contain this field.
+
+3. Set directory permissions on /images/uploads/ to "777" (WRITE access) if not already done.
+   If emailing files to suppliers, you will need to write the file info to a directory on your
+   server. The directory the files are written to is /images/uploads/.
+
+4. Enjoy!
+
 Changes
 =======
 BMH 2023-09-28
