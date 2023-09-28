@@ -4,7 +4,7 @@ Module Name
 
 Version Date
 ============
-v 1.4.1d 2023-08-29
+v 1.4.2d 2023-09-28
 
 Updated by:
 =======
@@ -28,6 +28,10 @@ What you do with that file is up to you. Some ideas: Drop shipping fulfillment, 
 bulk printing of labels, bulk printing of envelopes, etc., you get the idea. 
 Changes
 =======
+BMH 2023-09-28
+	set version to 1.4.2
+	use case statements when parsing name to break up into first middle last
+
 BMH 2023-08-29
 	set version to 1.4.1d
 	corrected shipping method heading
