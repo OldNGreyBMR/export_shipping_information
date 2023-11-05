@@ -4,7 +4,7 @@ Module Name
 
 Version Date
 ============
-v 1.4.2d 2023-09-28
+v 1.4.3 2023-11-05
 
 Updated by:
 =======
@@ -12,7 +12,7 @@ OldNGrey (BMH)
 
 Compatibility
 =============
-Compatible with Zen Cart v1.5.8 PHP 8.2
+Compatible with Zen Cart v1.5.8a PHP 8.2
 http://www.zen-cart.com
 
 Support Thread
@@ -46,6 +46,12 @@ Install / Ugrade: (From earlier release notes)
 
 Changes
 =======
+BMH 2023-11-05
+	set version to 1.4.3
+	correct attributes and place before line cost; Issue:https://github.com/OldNGreyBMR/export_shipping_information/issues/1
+	cleanup old code; format code; correct name splitting; finally fixed one product with details fault from prior to v132
+BMH 2023-09-28
+	set version to 1.4.2d
 BMH 2023-09-28
 	set version to 1.4.2
 	use case statements when parsing name to break up into first middle last
