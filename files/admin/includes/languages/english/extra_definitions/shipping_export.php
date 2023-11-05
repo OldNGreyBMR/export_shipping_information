@@ -17,12 +17,10 @@
 // | to obtain it through the world-wide-web, please send a note to       |
 // | license@zen-cart.com so we can mail you a copy immediately.          |
 // +----------------------------------------------------------------------+
-//  $Id: shipping_export.php  2008-09-28 09:17  econcepts $
+//  $Id: lang.shipping_export.php  2023-11-04 OldNGrey $
 //
-//define('VERSION', '1.2.3');  // Moved to shipping_export.php in root of Admin
+//define('VERSION', '1.4.3');  // Moved to shipping_export.php in root of Admin
 define('HEADING_SHIPPING_EXPORT_TITLE', 'Export Shipping &amp; Order Information');
-define('HEADING_VIDEO_TUTORIAL_TITLE', '<h2>"How To" Video Tutorial</h2>');
-define('HEADING_FEED_TITLE', '<h2>Zen Cart Optimization and Marketing Tips&nbsp;&nbsp;&nbsp;<a href="http://feeds.feedburner.com/ZenCartOptimizationMarketing" target="_blank"><img src="images/icons/rss-24x24.gif" alt="Subscribe to this RSS Feed" border="0"></a> <a href="http://www.zencartoptimization.com/2007/06/04/what-is-rss-and-how-do-i-use-it" target="_blank">What is RSS?</a></h2>');
 define('HEADING_ADDITIONAL_FIELDS_TITLE', 'Additional Fields and Options');
 define('HEADING_CUSTOM_DATE_TITLE', 'Custom Date Range');
 define('HEADING_PREVIOUS_EXPORTS_TITLE', 'Previous Exports Inclusion');
@@ -40,9 +38,7 @@ The data is exported in the same order as you see it listed on the screen, and i
 <br /><br />
 <strong>Features</strong>
 <ul>
-<li>Ability export additional fields. To do that, checkmark the box of the field(s) you want to add to the export file.</li>
-<li>Link to a video tutorial showing you how to use this module.</li>
-<li>Zen Cart Optimization &amp; Marketing Feed. <strong>Automatically updates on a regular basis</strong> with information to help you increase sales using Zen Cart.</li>
+<li>Ability to export additional fields. To do that, checkmark the box of the field(s) you want to add to the export file.</li>
 <li>Option to export in two different file formats
 <ul>
 <li>1 Order per row (default)</li>
