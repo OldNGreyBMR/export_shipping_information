@@ -62,8 +62,8 @@ if (!isset($iso_country3_code_checked)) {    $iso_country3_code_checked = '';}
 if (!isset($prod_details_checked)) {    $prod_details_checked = '';}
 if (!isset($dload_include)) {    $dload_include = '';}
 
-define('VERSION', '1.4.3a');
-define('ESIVERSION', '1.4.3a');
+define('VERSION', '1.4.3');
+define('ESIVERSION', '1.4.3');
 require('includes/application_top.php');
 require(DIR_WS_CLASSES . 'currencies.php');
 $currencies = new currencies();
