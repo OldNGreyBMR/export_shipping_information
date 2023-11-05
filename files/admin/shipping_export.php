@@ -140,11 +140,11 @@ if (isset($_POST['download_csv'])) {
 
         $order_info = $order_info . " FROM (" . TABLE_ORDERS . " o LEFT JOIN " . TABLE_ORDERS_PRODUCTS . " op ON o.orders_id = op.orders_id), "
              . TABLE_ORDERS_TOTAL . " ot";
-        
+
         if (!empty($_POST['iso_country2_code']) == 1 || !empty($_POST['iso_country3_code']) == 1) {
             $order_info = $order_info . ", " . TABLE_COUNTRIES . " cc";
         };
-        
+
         $order_info = $order_info . " WHERE o.orders_id = ot.orders_id ";
 
         if (!empty($_POST['iso_country2_code']) == 1 || !empty($_POST['iso_country3_code']) == 1) {   // BMH isset
@@ -172,24 +172,24 @@ if (isset($_POST['download_csv'])) {
         $order_info = "SELECT o.orders_id, customers_email_address, delivery_name, delivery_company, delivery_street_address,
                 delivery_suburb, delivery_city, delivery_postcode, delivery_state, delivery_country, shipping_method,
                 customers_telephone, order_total, date_purchased, ot.value, os.comments, order_tax, o.orders_status, o.payment_method"; // BMH ANY_VALUE(os.comments) NO support in MariaDB
-            
-        if (($_POST['iso_country2_code']) == 1) {
+
+        if (!empty($_POST['iso_country2_code']) == 1) {
             $order_info = $order_info . ", cc.countries_iso_code_2";
         };
 
-        if (($_POST['iso_country3_code']) == 1) {
+        if (!empty($_POST['iso_country3_code']) == 1) {
             $order_info = $order_info . ", cc.countries_iso_code_3";
         };
 
         $order_info = $order_info . " FROM " . TABLE_ORDERS . " o, " . TABLE_ORDERS_STATUS_HISTORY . " os, " . TABLE_ORDERS_TOTAL . " ot";
- 
-        if (($_POST['iso_country2_code']) == 1 || isset($_POST['iso_country3_code']) == 1) {
+
+        if (!empty($_POST['iso_country2_code']) == 1 || !empty($_POST['iso_country3_code']) == 1) {
             $order_info = $order_info . ", " . TABLE_COUNTRIES . " cc";
         };
 
         $order_info = $order_info . " WHERE o.orders_id = ot.orders_id AND ot.class = 'ot_shipping' ";
 
-        if (($_POST['iso_country2_code']) == 1 || isset($_POST['iso_country3_code']) == 1) {
+        if (!empty($_POST['iso_country2_code']) == 1 || !empty($_POST['iso_country3_code']) == 1) {
             $order_info = $order_info . " AND cc.countries_name = o.delivery_country ";
         };
 
@@ -277,8 +277,8 @@ if (isset($_POST['download_csv'])) {
         if (($_POST['filelayout']) == 2) { // 1 Product Per row RADIO
             //if (ESI_DEBUG == 'Yes') echo '<br/> ln278 product filelayout= ' . $_POST['filelayout'] . " \n"; //BMH DEBUG
             $str_header = $str_header . ",Product Qty,Product Model,Product Name,Product Attributes,Products Price"; //BMH reposition attributes
-            $str_header = $str_header . ",Line cost";  
-            $str_header = $str_header . ",Line tax";  
+            $str_header = $str_header . ",Line cost";
+            $str_header = $str_header . ",Line tax";
 
             if (($_POST['order_subtotal']) == 1) {
                 $str_header = $str_header . ",Order Subtotal";
@@ -328,8 +328,8 @@ if (isset($_POST['download_csv'])) {
             if (($_POST['payment_method']) == 1) {
                 $str_header = $str_header . ",Payment Method";
             };
-    
-        } // End if to determine which header to use  
+
+        } // End if to determine which header to use
     } else {        // 1 OPR with no product details
         if (($_POST['shiptotal']) == 1) {
             $str_header = $str_header . ",Shipping Total";
@@ -346,9 +346,9 @@ if (isset($_POST['download_csv'])) {
         if (($_POST['payment_method']) == 1) {
             $str_header = $str_header . ",Payment Method";
         };
-    }    
+    }
         // end Row header if product details selected
-   
+
     $str_header = $str_header . "\n";  // Print header row - data in on the next line
 
     /* dhc */ // DEBUG line [to keep]
@@ -465,7 +465,7 @@ if (isset($_POST['download_csv'])) {
             $orders_subtotal = $db->Execute($orders_subtotal_query);    // run sql
 
         } // eof sub-totals
-    
+
         if (isset($_POST['product_details']) == 1) {     // Order details should be added to the export string.
             if (ESI_DEBUG == 'Yes') echo '<br/> ln466 product_details=1 ' ." \n"; //BMH DEBUG
             if (($_POST['filelayout']) == 2) {      // 1 PPR RADIO
@@ -521,13 +521,13 @@ if (isset($_POST['download_csv'])) {
                     $str_export .= $FIELDSEPARATOR . $FIELDSTART . $FIELDEND; // add blank space for filler
                 } // end if
 
-            } else { // 1 OPR  
+            } else { // 1 OPR
                 if (ESI_DEBUG == 'Yes') echo '<br/> ln522 product_details = 1 & OPR' . "\n"; // BMH DEBUG
                 /**************the following exports 1 OPR w/ attributes) ****************/
                 $oID = zen_db_prepare_input($order_details->fields['orders_id']);
                 $oIDME = $order_details->fields['orders_id'];
                 $order = new order($oID);
-                
+
                 for ($i = 0, $n = sizeof($order->products); $i < $n; $i++) {
                     $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order->products[$i]['qty'] . $FIELDEND;
                     $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order->products[$i]['model']  . $FIELDEND;
@@ -545,7 +545,7 @@ if (isset($_POST['download_csv'])) {
                        // $str_export .= $FIELDSEPARATOR . $FIELDSTART . $FIELDEND; // add blank space for filler
                     }
                     $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order->products[$i]['final_price'] . $FIELDEND;
-                } 
+                }
                 if ($n < $max_products)  {
                     for ($f = 0, $g = $max_products; $f < $g-1; $f++) {
                         $str_export .= $FIELDSEPARATOR . $FIELDSTART .  "" . $FIELDEND;
@@ -553,8 +553,8 @@ if (isset($_POST['download_csv'])) {
                         $str_export .= $FIELDSEPARATOR . $FIELDSTART .  "" . $FIELDEND;
                         $str_export .= $FIELDSEPARATOR . $FIELDSTART .  "" . $FIELDEND;
                         $str_export .= $FIELDSEPARATOR . $FIELDSTART .  "" . $FIELDEND;
-                    } 
-                }         
+                    }
+                }
                 /*************************************************************************/
             } // End if for determining type of export
 
