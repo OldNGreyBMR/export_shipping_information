@@ -1,10 +1,10 @@
 Module Name
 ==================
-**Export Shipping Information **
+**Export Shipping Information
 
 Version Date
 ============
-v 1.4.2d 2023-09-28
+V1.5.0 2023-12-21
 
 Updated by:
 =======
@@ -12,24 +12,35 @@ OldNGrey (BMH)
 
 Compatibility
 =============
-Compatible with Zen Cart v1.5.8 PHP 8.2
+Compatible with Zen Cart v1.5.7 and v1.5.8a PHP 7.4 to PHP 8.3
 http://www.zen-cart.com
 
 Support Thread
 ======
 http://www.zen-cart.com/forum/showthread.php?t=75406
 
-
-Description
+**Description
 ===========
 This module enables you, from within the Admin, to export shipping information in various formats for orders placed.
 
 What you do with that file is up to you. Some ideas: Drop shipping fulfillment, Analysis of data in Excel spreadsheets,
 bulk printing of labels, bulk printing of envelopes, etc., you get the idea. 
-Installation
-============
-Install / Ugrade: (From earlier release notes)
-=================
+
+**Installation
+==============
+_ _Install / Upgrade for zc 1.5.8+
+===============================
+1	If you have installed a previous version on zc 1.5.8 look at your master copy and remove all of the files.
+	Copy the v1.5.8/zc-plugins folder to your site
+	Log into Admin > Modules > Plugin Manager locate Export Shipping & Order Information and install
+
+2	New Install
+	Copy the v1.5.8/zc-plugins folder to your site
+	Log into Admin and run the install.sql files through admin > Tools > Install SQL Patches
+	Log into Admin > Modules > Plugin Manager locate Export Shipping & Order Information and install
+
+_ _Install / Ugrade ONLY FOR ZC V 1.5.7 
+==================
 1. Upload the entire contents of the "admin" folder to your website. All directories are already named for you and there are no files to overwrite so it should be easy.
    NOTE: If you changed the name of your "admin" directory to something else, then upload
          to that directory.
@@ -46,6 +57,11 @@ Install / Ugrade: (From earlier release notes)
 
 Changes
 =======
+BMH 2023-12-21
+	set verion to 1.5.0
+	for zc 1.5.7 old files structure maintained
+	for zc 1.5.8+ use the zc_plugins structure
+	
 BMH 2023-09-28
 	set version to 1.4.2
 	use case statements when parsing name to break up into first middle last
