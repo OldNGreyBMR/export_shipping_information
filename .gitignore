@@ -8,6 +8,7 @@ nppBackup/
 # Other files and folders
 .settings/
 .dev-*
+*.zip
 
 # Executables
 *.swf
