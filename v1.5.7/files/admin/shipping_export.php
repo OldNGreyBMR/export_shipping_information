@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 /**
  * Exports Order / Shipping Information From Zen Cart in various chosen formats
  *
@@ -9,31 +9,8 @@
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: shipping_export.php, v 1.3.2 08.05.2010 11:41 Eric Leuenberger econcepts@zencartoptimization.com$
  * Thanks to dhcernese and Scott Wilson (That Software Guy) for contributing various portions that contained several bug-fixes.
- * Version: 1.4.3 2023-11-05 BMH (OldNGrey)
- *
- // BMH Version Number - set on line 53
- // BMH 2021-10 correct version number
- // BMH 2022-05-10 line 321 added fields to group by
- // BMH  line 53 date format
- // BMH  variables
- // BMH  2022-10-02  ln172 ANY_VALUE not supported in MariaDB
- //                  ln 871 undefined offset
- //                  ln148 isset; ln707 isset; ln977 isset($_POST['order_status_setting'])
- //      2022-11-30  ln Undefined index: dload_include
- //  BMH 2023-03-03 reorder to match reconciliation spreadsheet;
- //              add line tax space; negative symbol for discount
- //                  ln1034 default most commonly used check boxes to checked
- // BMH ln633 include other discount types - only picks up first one
- // BMH ln633 included ot_paymentmodulefee; accumulate discounts and make negative number
- //               select DISTINCT to obtain only one values where multiple discounts are applied and remove orders products from inner join
- //      ln128 +ln509 included products_tax/100
- //      ln319 moved shipping total to follow after subtotal heading
- //      ln636 moved shipping value to follow after subtotal value
- // 2023-08-29 shipping method heading, comments, status correct placement
- //       clean product name if double quotes included as per abbr for inch
- // 2023-09-28 ln347 use case to determine words in name; 1 word = STOREPICKUP
- // 2023-11-02  v1.4.3  correct attributes and place before line cost; cleanup old code; format code; correct name splitting
- //                      finally fixed one product with details fault from prior to v132
+ * Version: 1.4.0 2023-12-20 BMH (OldNGrey)
+ * Version: 1.5.0 2023-12-21 Convert to admin zc_plugins format for zc 1.5.8; Renamed files to shipping_export2
 */
 if (!isset($success_message)) {    $success_message = '';}
 if (!isset($linevalue)) {    $linevalue = '';}
@@ -62,8 +39,8 @@ if (!isset($iso_country3_code_checked)) {    $iso_country3_code_checked = '';}
 if (!isset($prod_details_checked)) {    $prod_details_checked = '';}
 if (!isset($dload_include)) {    $dload_include = '';}
 
-define('VERSION', '1.4.3');
-define('ESIVERSION', '1.4.3');
+define('VERSION', '1.5.0');
+define('ESIVERSION', '1.5.0');
 require('includes/application_top.php');
 require(DIR_WS_CLASSES . 'currencies.php');
 $currencies = new currencies();
@@ -102,7 +79,7 @@ if ($format == 'TXT') {
     $LINESTART = '';
     $LINEBREAK = "\n";
     $ATTRIBSEPARATOR = ' | '; //Be Careful with this option. Setting it to a 'comma' for example could throw off the remaining fields.
-} // BMH change file name date format from 'mdy-Hi' to 'Ymd-Hi'
+} // BMH change file name date format from 'mdy-Hi' to 'Ymd-Hi ISO standards'
 $file = (isset($_POST['filename']) ? $_POST['filename'] : "Orders" . date('Ymd-Hi') . $file_extension . "");
 $to_email_address = (isset($_POST['auto_email_supplier']) ? $_POST['auto_email_supplier'] : "" . EMAIL_EXPORT_ADDRESS . "");
 $email_subject = (isset($_POST['auto_email_subject']) ? $_POST['auto_email_subject'] : "Order export from " . STORE_NAME . "");
@@ -124,7 +101,7 @@ if (isset($_POST['download_csv'])) {
     //**************************************************************
 
     if (($_POST['filelayout']) == 2) { // 1 Product Per row RADIO
-        if (ESI_DEBUG == 'Yes') echo '<br/> ln134 filelayout=2 product per row' . "\n"; //BMH DEBUG
+        if (ESI_DEBUG == 'Yes') echo '<br/> ln104 filelayout=2 product per row' . "\n"; //BMH DEBUG
         $order_info = "SELECT o.orders_id, customers_email_address, delivery_name, delivery_company, delivery_street_address, delivery_suburb,
         delivery_city, delivery_postcode, delivery_state, delivery_country, shipping_method, customers_telephone, order_total, op.products_model,
         products_name, op.products_price, final_price, op.products_quantity, op.products_tax, date_purchased, ot.value, orders_products_id, order_tax,
@@ -168,7 +145,7 @@ if (isset($_POST['download_csv'])) {
         // ++++++++++++++++ //
 
     } else { //  1 Order Per row (filelayout==1)
-        //if (ESI_DEBUG == 'Yes') echo '<br/> ln177 filelayout should = 1 SHOULD BE one OPR = '. $_POST['filelayout'] . " \n"; //BMH DEBUG
+        //if (ESI_DEBUG == 'Yes') echo '<br/> ln148 filelayout should = 1 SHOULD BE one OPR = '. $_POST['filelayout'] . " \n"; //BMH DEBUG
         $order_info = "SELECT o.orders_id, customers_email_address, delivery_name, delivery_company, delivery_street_address,
                 delivery_suburb, delivery_city, delivery_postcode, delivery_state, delivery_country, shipping_method,
                 customers_telephone, order_total, date_purchased, ot.value, os.comments, order_tax, o.orders_status, o.payment_method"; // BMH ANY_VALUE(os.comments) NO support in MariaDB
@@ -234,13 +211,13 @@ if (isset($_POST['download_csv'])) {
         $max_num_products_result = $db->Execute($max_num_products);
 
         $max_products = $max_num_products_result->fields['max_num_of_products'];
-        //if (ESI_DEBUG == 'Yes') echo '<br/> ln237 $max_products= ' . $max_products; //BMH DEBUG
+        //if (ESI_DEBUG == 'Yes') echo '<br/> ln214 $max_products= ' . $max_products; //BMH DEBUG
     } // End File layout sql
 
     $order_details = $db->Execute($order_info);     // run the sql
 
     /******************Begin Set Header Row Information*****************************/
-    //if (ESI_DEBUG == 'Yes') echo '<br/> ln243 begin headers' . " \n"; //BMH DEBUG
+    //if (ESI_DEBUG == 'Yes') echo '<br/> ln220 begin headers' . " \n"; //BMH DEBUG
     $str_header = "Order ID,Customer Email";
 
     if ($_POST['split_name'] == 1) { //If name split is desired then split it.
@@ -273,9 +250,9 @@ if (isset($_POST['download_csv'])) {
     };
 
     if (($_POST['product_details']) == 1 ) { // add to header row
-       // (ESI_DEBUG == 'Yes') echo '<br/> ln280 filelayout= ' . $_POST['filelayout'] . " \n"; //BMH DEBUG
+       // (ESI_DEBUG == 'Yes') echo '<br/> ln253 filelayout= ' . $_POST['filelayout'] . " \n"; //BMH DEBUG
         if (($_POST['filelayout']) == 2) { // 1 Product Per row RADIO
-            //if (ESI_DEBUG == 'Yes') echo '<br/> ln278 product filelayout= ' . $_POST['filelayout'] . " \n"; //BMH DEBUG
+            //if (ESI_DEBUG == 'Yes') echo '<br/> ln255 product filelayout= ' . $_POST['filelayout'] . " \n"; //BMH DEBUG
             $str_header = $str_header . ",Product Qty,Product Model,Product Name,Product Attributes,Products Price"; //BMH reposition attributes
             $str_header = $str_header . ",Line cost";
             $str_header = $str_header . ",Line tax";
@@ -440,7 +417,7 @@ if (isset($_POST['download_csv'])) {
             $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['date_purchased'] . $FIELDEND;
         };
 
-        //******************************************************** ****************************************************************************************//
+        //******************************************************************//
         // bof sub-totals
         if (isset($_POST['order_subtotal']) == 1) { // BMH isset
             $orders_subtotal_query = "SELECT o.orders_id, customers_email_address, delivery_name, delivery_company,
@@ -467,11 +444,11 @@ if (isset($_POST['download_csv'])) {
         } // eof sub-totals
 
         if (isset($_POST['product_details']) == 1) {     // Order details should be added to the export string.
-            if (ESI_DEBUG == 'Yes') echo '<br/> ln466 product_details=1 ' ." \n"; //BMH DEBUG
+            if (ESI_DEBUG == 'Yes') echo '<br/> ln447 product_details=1 ' ." \n"; //BMH DEBUG
             if (($_POST['filelayout']) == 2) {      // 1 PPR RADIO
-                if (ESI_DEBUG == 'Yes') echo '<br/> ln468 filelayout = 2 is ' . $_POST['filelayout'] . "\n" ;  //BMH DEBUG
+                if (ESI_DEBUG == 'Yes') echo '<br/> ln449 filelayout = 2 is ' . $_POST['filelayout'] . "\n" ;  //BMH DEBUG
                 // bmh CHANGE ORDER of fields
-                if (!defined($linevalue)) $linevalue = 0;   // BMH calc line cost
+                if (!isset($linevalue)) $linevalue = 0;   // BMH calc line cost ; change from defined to isset
                 if (!isset($linetax))   $linetax = 0;       // BMH calc line tax
 
                 $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['products_quantity']  . $FIELDEND;
@@ -593,7 +570,7 @@ if (isset($_POST['download_csv'])) {
             $num_rows = $orders_discount->RecordCount();
             if ($num_rows > 0) { // if records were found
                 $str_export .= $FIELDSEPARATOR . $FIELDSTART .  $orders_discount->fields['value'] . $FIELDEND; //add discount amt to export string // BMH add negative symbol
-            } else { // add a BLANK field to the export file for "consistancy"
+            } else { // add a BLANK field to the export file for "consistency"
                 $str_export .= $FIELDSEPARATOR . $FIELDSTART . $FIELDEND; // add blank space for filler
             } // end if
         } // End if for determining if order discount was selected to export.
@@ -693,8 +670,9 @@ while (!$orders_status->EOF) {
 //
 
 ?>
-<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html <?php echo HTML_PARAMS; ?>>
+<!doctype html >
+<html
+<?php echo HTML_PARAMS; ?>>
 
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=<?php echo CHARSET; ?>">
@@ -775,12 +753,10 @@ while (!$orders_status->EOF) {
                                     <td valign="top" style="padding-right:7px;">
                                         <table border="0" width="100%" cellspacing="0" cellpadding="0">
                                             <tr>
-                                                <td valign="top"><span class="pageHeading"><?php echo HEADING_SHIPPING_EXPORT_TITLE; ?></span>
-                                                <td align="right">ESIVERSION: <?php // BMH
-                                                                                echo ESIVERSION; ?> </td>
-                                    </td>
-                                    <td align="right"><?php echo zen_draw_separator('pixel_trans.gif', HEADING_IMAGE_WIDTH, HEADING_IMAGE_HEIGHT); ?></td>
-                                </tr>
+                                                <td valign="top"><span class="pageHeading"><?php echo HEADING_SHIPPING_EXPORT_TITLE; ?></span> </td>
+                                                <td valign ="top" align="right">ESIVERSION: <?php  echo ESIVERSION; // BMH ?> </td>
+                                                <td align="right"><?php echo zen_draw_separator('pixel_trans.gif', HEADING_IMAGE_WIDTH, HEADING_IMAGE_HEIGHT); ?></td>
+                                          </tr>
                                 <?php if ($success_message != "") { ?>
                                     <tr>
                                         <td colspan=2 valign="top"><?php echo $success_message; ?></td>

@@ -1,25 +1,16 @@
 <?php
-//
-// +----------------------------------------------------------------------+
-// |zen-cart Open Source E-commerce                                       |
-// +----------------------------------------------------------------------+
-// | Copyright (c) 2003 The zen-cart developers                           |
-// |                                                                      |
-// | http://www.zen-cart.com/index.php                                    |
-// |                                                                      |
-// | Portions Copyright (c) 2003 osCommerce                               |
-// +----------------------------------------------------------------------+
-// | This source file is subject to version 2.0 of the GPL license,       |
-// | that is bundled with this package in the file LICENSE, and is        |
-// | available through the world-wide-web at the following url:           |
-// | http://www.zen-cart.com/license/2_0.txt.                             |
-// | If you did not receive a copy of the zen-cart license and are unable |
-// | to obtain it through the world-wide-web, please send a note to       |
-// | license@zen-cart.com so we can mail you a copy immediately.          |
-// +----------------------------------------------------------------------+
-//  $Id: lang.shipping_export.php  2023-11-04 OldNGrey $
-//
-//define('VERSION', '1.4.3');  // Moved to shipping_export.php in root of Admin
+/**
+ * Exports Order / Shipping Information From Zen Cart in various chosen formats
+ *
+ * @package Export Shipping and Order Information
+ * @copyright Copyright 2009, Eric Leuenberger http://www.zencartoptimization.com
+ * @copyright Portions Copyright 2003-2006 Zen Cart Development Team
+ * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
+ * @version $Id: shipping_export.php, v 1.3.2 08.05.2010 11:41 Eric Leuenberger econcepts@zencartoptimization.com$
+ * Thanks to dhcernese and Scott Wilson (That Software Guy) for contributing various portions that contained several bug-fixes.
+ */
+//  $Id: lang.shipping_export.php  2023-12-20 OldNGrey $
+
 $define = [
     'HEADING_SHIPPING_EXPORT_TITLE' => 'Export Shipping &amp; Order Information' ,
     'HEADING_ADDITIONAL_FIELDS_TITLE' => 'Additional Fields and Options' ,
@@ -86,9 +77,8 @@ $define = [
     // Email Definitions
     'EMAIL_EXPORT_SUBJECT' => ''.STORE_NAME.' orders for processing.' ,
     'EMAIL_EXPORT_BODY' => 'Attached please find the most recent set of orders from '.STORE_NAME.'. If you have any questions please contact us.' ,
-    'EMAIL_EXPORT_ADDRESS' => 'someemail@somedomain.com' ,  // to send to multiple addresses separate each email with a comma. Example:  firstemail@somedomain.com,secondemail@somedomain.com
+    'EMAIL_EXPORT_ADDRESS' => 'some-email@some-domain.com' ,  // to send to multiple addresses separate each email with a comma. Example:  firstemail@somedomain.com,secondemail@somedomain.com
 ];
 
 return $define;
 
-?>
