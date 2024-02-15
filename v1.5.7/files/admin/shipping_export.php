@@ -10,7 +10,8 @@ declare(strict_types=1);
  * @version $Id: shipping_export.php, v 1.3.2 08.05.2010 11:41 Eric Leuenberger econcepts@zencartoptimization.com$
  * Thanks to dhcernese and Scott Wilson (That Software Guy) for contributing various portions that contained several bug-fixes.
  * Version: 1.4.0 2023-12-20 BMH (OldNGrey)
- * Version: 1.5.0 2023-12-21 Convert to admin zc_plugins format for zc 1.5.8; Renamed files to shipping_export2
+ * Version: 1.5.0 2023-12-21 Convert to admin zc_plugins format for zc 1.5.8; Renamed files to shipping_export2 for zc_plugins folder
+ * Version: 1.5.0.a 2024-02-16 remove ASC from all group by statements
 */
 if (!isset($success_message)) {    $success_message = '';}
 if (!isset($linevalue)) {    $linevalue = '';}
@@ -39,8 +40,8 @@ if (!isset($iso_country3_code_checked)) {    $iso_country3_code_checked = '';}
 if (!isset($prod_details_checked)) {    $prod_details_checked = '';}
 if (!isset($dload_include)) {    $dload_include = '';}
 
-define('VERSION', '1.5.0');
-define('ESIVERSION', '1.5.0');
+define('VERSION', '1.5.0.a');
+define('ESIVERSION', '1.5.0.a');
 require('includes/application_top.php');
 require(DIR_WS_CLASSES . 'currencies.php');
 $currencies = new currencies();
@@ -183,7 +184,8 @@ if (isset($_POST['download_csv'])) {
             $order_info = $order_info . " AND date_purchased BETWEEN '" . $start_date . "' AND '" . $end_date . "'"; // BMH Note: BETWEEN operator is inclusive:
         }
 
-        $order_info = $order_info . " GROUP BY o.orders_id, ot.value ASC"; // BMH add o. & ot.value
+        //$order_info = $order_info . " GROUP BY o.orders_id, ot.value ASC"; // BMH add o. & ot.value
+        $order_info = $order_info . " GROUP BY o.orders_id, ot.value "; // BMH removed ASC
         // complete the sql statement for 1 order per row
 
         // count how many products in orders
@@ -204,7 +206,8 @@ if (isset($_POST['download_csv'])) {
             $max_num_products = $max_num_products . " AND date_purchased BETWEEN '" . $start_date . "' AND '" . $end_date . "'";
         }
 
-        $max_num_products = $max_num_products . " GROUP BY o.orders_id ASC
+        //$max_num_products = $max_num_products . " GROUP BY o.orders_id ASC // BMH removed ASC
+        $max_num_products = $max_num_products . " GROUP BY o.orders_id
                 ORDER BY max_num_of_products DESC
                 LIMIT 1";
 
@@ -658,7 +661,7 @@ $status_array = array();
 $status_table = array();
 $orders_status = $db->Execute("select orders_status_id, orders_status_name from " . TABLE_ORDERS_STATUS . "
                                    where language_id = '" . (int)$_SESSION['languages_id'] . "'
-                                   order by orders_status_id asc");
+                                   order by orders_status_id ASC");
 while (!$orders_status->EOF) {
     $status_array[] = array(
         'id' => $orders_status->fields['orders_status_id'],
