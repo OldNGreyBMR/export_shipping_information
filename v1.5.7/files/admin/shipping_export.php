@@ -579,7 +579,7 @@ if (isset($_POST['download_csv'])) {
                 $orders_discount_query = $orders_discount_query . " AND date_purchased BETWEEN '" . $start_date . "' AND '" . $end_date . "'";
                 //$orders_discount_query = $orders_discount_query . " AND date_purchased >= '". $start_date ."' AND date_purchased <= '". $end_date ."'";
             }
-            $orders_discount_query = $orders_discount_query . "GROUP BY o.orders_id" ;
+            $orders_discount_query = $orders_discount_query . " GROUP BY o.orders_id" ;
             $orders_discount_query = $orders_discount_query . " ORDER BY orders_id ASC";
 
             $orders_discount = $db->Execute($orders_discount_query);
