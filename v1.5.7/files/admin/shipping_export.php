@@ -11,37 +11,38 @@ declare(strict_types=1);
  * Thanks to dhcernese and Scott Wilson (That Software Guy) for contributing various portions that contained several bug-fixes.
  * Version: 1.4.0 2023-12-20 BMH (OldNGrey)
  * Version: 1.5.0 2023-12-21 Convert to admin zc_plugins format for zc 1.5.8; Renamed files to shipping_export2 for zc_plugins folder
- * Version: 1.5.0.a 2024-02-16 remove ASC from all group by statements
+ * Version: 1.5.0.a 2024-02-16 remove ASC from all group by statements issue #4 resolved
+ *          1.5.1 2024-02-16 ln348 add 4 names option; added extra group by fields to avoid group by error when SQL mode 'ONLY_FULL_GROUP_BY' is set
 */
-if (!isset($success_message)) {    $success_message = '';}
-if (!isset($linevalue)) {    $linevalue = '';}
-if (!isset($html_msg)) {    $html_msg  = '';}
-if (!isset($export_test_checked)) {    $export_test_checked = '';}
-if (!isset($export_split_checked)) {    $export_split_checked = '';}
-if (!isset($date_status)) {    $date_status = '';}
-if (!isset($export_header_row_checked)) {    $export_header_row_checked = '';}
-if (!isset($order_status_setting)) {    $order_status_setting = '';}
-if (!isset($order_status_setting_checked)) {    $order_status_setting_checked = '';}
-if (!isset($order_status)) {    $order_status = '';}
-if (!isset($dload_include_checked)) {    $dload_include_checked = '';}
-if (!isset($shipping_total_checked)) {    $shipping_total_checked = '';}
-if (!isset($order_total_checked)) {    $order_total_checked = '';}
-if (!isset($date_purchased_checked)) {    $date_purchased_checked = '';}
-if (!isset($order_tax_checked)) {    $order_tax_checked = '';}
-if (!isset($order_subtotal_checked)) {    $order_subtotal_checked = '';}
-if (!isset($order_discount_checked)) {    $order_discount_checked = '';}
-if (!isset($order_pmethod_checked)) {    $order_pmethod_checked = '';}
-if (!isset($shipping_method_checked)) {    $shipping_method_checked = '';}
-if (!isset($order_comments_checked)) {    $order_comments_checked = '';}
-if (!isset($phone_number_checked)) {    $phone_number_checked = '';}
-if (!isset($order_status_checked)) {    $order_status_checked = '';}
-if (!isset($iso_country2_code_checked)) {    $iso_country2_code_checked = '';}
-if (!isset($iso_country3_code_checked)) {    $iso_country3_code_checked = '';}
-if (!isset($prod_details_checked)) {    $prod_details_checked = '';}
-if (!isset($dload_include)) {    $dload_include = '';}
+if (!isset($success_message))               {$success_message = '';}
+if (!isset($linevalue))                     { $linevalue = '';}
+if (!isset($html_msg))                      { $html_msg  = '';}
+if (!isset($export_test_checked))           { $export_test_checked = '';}
+if (!isset($export_split_checked))          { $export_split_checked = '';}
+if (!isset($date_status))                   { $date_status = '';}
+if (!isset($export_header_row_checked))     { $export_header_row_checked = '';}
+if (!isset($order_status_setting))          { $order_status_setting = '';}
+if (!isset($order_status_setting_checked))  { $order_status_setting_checked = '';}
+if (!isset($order_status))                  { $order_status = '';}
+if (!isset($dload_include_checked))         { $dload_include_checked = '';}
+if (!isset($shipping_total_checked))        { $shipping_total_checked = '';}
+if (!isset($order_total_checked))           { $order_total_checked = '';}
+if (!isset($date_purchased_checked))        { $date_purchased_checked = '';}
+if (!isset($order_tax_checked))             { $order_tax_checked = '';}
+if (!isset($order_subtotal_checked))        { $order_subtotal_checked = '';}
+if (!isset($order_discount_checked))        { $order_discount_checked = '';}
+if (!isset($order_pmethod_checked))         { $order_pmethod_checked = '';}
+if (!isset($shipping_method_checked))       { $shipping_method_checked = '';}
+if (!isset($order_comments_checked))        { $order_comments_checked = '';}
+if (!isset($phone_number_checked))          { $phone_number_checked = '';}
+if (!isset($order_status_checked))          { $order_status_checked = '';}
+if (!isset($iso_country2_code_checked))     { $iso_country2_code_checked = '';}
+if (!isset($iso_country3_code_checked))     { $iso_country3_code_checked = '';}
+if (!isset($prod_details_checked))          { $prod_details_checked = '';}
+if (!isset($dload_include))                 { $dload_include = '';}
 
-define('VERSION', '1.5.0.a');
-define('ESIVERSION', '1.5.0.a');
+define('VERSION', '1.5.1');
+define('ESIVERSION', '1.5.1');
 require('includes/application_top.php');
 require(DIR_WS_CLASSES . 'currencies.php');
 $currencies = new currencies();
@@ -102,7 +103,7 @@ if (isset($_POST['download_csv'])) {
     //**************************************************************
 
     if (($_POST['filelayout']) == 2) { // 1 Product Per row RADIO
-        if (ESI_DEBUG == 'Yes') echo '<br/> ln104 filelayout=2 product per row' . "\n"; //BMH DEBUG
+       // if (ESI_DEBUG == 'Yes') echo '<br/> ln104 filelayout=2 product per row' . "\n"; //BMH DEBUG
         $order_info = "SELECT o.orders_id, customers_email_address, delivery_name, delivery_company, delivery_street_address, delivery_suburb,
         delivery_city, delivery_postcode, delivery_state, delivery_country, shipping_method, customers_telephone, order_total, op.products_model,
         products_name, op.products_price, final_price, op.products_quantity, op.products_tax, date_purchased, ot.value, orders_products_id, order_tax,
@@ -149,7 +150,7 @@ if (isset($_POST['download_csv'])) {
         //if (ESI_DEBUG == 'Yes') echo '<br/> ln148 filelayout should = 1 SHOULD BE one OPR = '. $_POST['filelayout'] . " \n"; //BMH DEBUG
         $order_info = "SELECT o.orders_id, customers_email_address, delivery_name, delivery_company, delivery_street_address,
                 delivery_suburb, delivery_city, delivery_postcode, delivery_state, delivery_country, shipping_method,
-                customers_telephone, order_total, date_purchased, ot.value, os.comments, order_tax, o.orders_status, o.payment_method"; // BMH ANY_VALUE(os.comments) NO support in MariaDB
+                customers_telephone, order_total, date_purchased, ot.value, os.comments, order_tax, o.orders_status, o.payment_method"; // BMH correct ANY_VALUE(os.comments) NO support in MariaDB
 
         if (!empty($_POST['iso_country2_code']) == 1) {
             $order_info = $order_info . ", cc.countries_iso_code_2";
@@ -185,7 +186,11 @@ if (isset($_POST['download_csv'])) {
         }
 
         //$order_info = $order_info . " GROUP BY o.orders_id, ot.value ASC"; // BMH add o. & ot.value
-        $order_info = $order_info . " GROUP BY o.orders_id, ot.value "; // BMH removed ASC
+        //$order_info = $order_info . " GROUP BY o.orders_id, ot.value "; // BMH removed ASC; invalid syntax
+        $order_info = $order_info . " GROUP BY o.orders_id, customers_email_address, delivery_name, delivery_company, delivery_street_address,
+                delivery_suburb, delivery_city, delivery_postcode, delivery_state, delivery_country, shipping_method,
+                customers_telephone, order_total, date_purchased, ot.value, os.comments, order_tax, o.orders_status, o.payment_method "; // BMH removed ASC; invalid syntax
+
         // complete the sql statement for 1 order per row
 
         // count how many products in orders
@@ -206,12 +211,18 @@ if (isset($_POST['download_csv'])) {
             $max_num_products = $max_num_products . " AND date_purchased BETWEEN '" . $start_date . "' AND '" . $end_date . "'";
         }
 
-        //$max_num_products = $max_num_products . " GROUP BY o.orders_id ASC // BMH removed ASC
-        $max_num_products = $max_num_products . " GROUP BY o.orders_id
+        //$max_num_products = $max_num_products . " GROUP BY o.orders_id ASC // BMH removed ASC; invalid syntax
+        $max_num_products = $max_num_products . " GROUP BY o.orders_id 
                 ORDER BY max_num_of_products DESC
                 LIMIT 1";
 
         $max_num_products_result = $db->Execute($max_num_products);
+        // check for results 
+        if (count($max_num_products_result) < 1) { 
+            echo ' NO records were returned for the selected target dates <br>';
+           // $results_check = count($max_num_products_result);
+            die('Press the BACK button in your browser to return to the previous page.');
+        }
 
         $max_products = $max_num_products_result->fields['max_num_of_products'];
         //if (ESI_DEBUG == 'Yes') echo '<br/> ln214 $max_products= ' . $max_products; //BMH DEBUG
@@ -343,6 +354,9 @@ if (isset($_POST['download_csv'])) {
             $fullname = $order_details->fields['delivery_name'];
             $count = preg_match_all("/[\w']+/", $fullname);  // BMH change from str_word_count which is inconsistent
             switch ($count) {
+                case 4:
+                    list($first, $middle, $third, $last) = preg_split("/[\s,]+/", $fullname); // BMH add 4 word option 2024-02-16
+                    break;
                 case 3:
                     list($first, $middle, $last) = preg_split("/[\s,]+/", $fullname);
                     break;
@@ -409,7 +423,7 @@ if (isset($_POST['download_csv'])) {
         if (isset($_POST['order_comments']) == 1) {
             $orders_comments_query = "SELECT *  FROM " . TABLE_ORDERS_STATUS_HISTORY . " WHERE orders_id = " . $order_details->fields['orders_id'] . "
                 GROUP BY orders_id, orders_status_id, orders_status_history_id, date_added, customer_notified, comments, updated_by
-                ORDER BY orders_status_history_id ASC"; // BMH MySQLD added extra fields to avoid group by error
+                ORDER BY orders_status_history_id ASC"; // BMH MySQLD added extra fields to avoid group by error when SQL mode 'ONLY_FULL_GROUP_BY' is set
             $orders_comments = $db->Execute($orders_comments_query);
             $str_safequotes = str_replace('"', "'", $orders_comments->fields['comments'] ); // replace quotes with single quotes if present
             $str_export .= $FIELDSEPARATOR . $FIELDSTART . str_replace(array("\r\n", "\r", "\n"), " ", $str_safequotes) . $FIELDEND; // Remove any line breaks in first comment and print to export string
@@ -565,6 +579,7 @@ if (isset($_POST['download_csv'])) {
                 $orders_discount_query = $orders_discount_query . " AND date_purchased BETWEEN '" . $start_date . "' AND '" . $end_date . "'";
                 //$orders_discount_query = $orders_discount_query . " AND date_purchased >= '". $start_date ."' AND date_purchased <= '". $end_date ."'";
             }
+            $orders_discount_query = $orders_discount_query . "GROUP BY o.orders_id" ;
             $orders_discount_query = $orders_discount_query . " ORDER BY orders_id ASC";
 
             $orders_discount = $db->Execute($orders_discount_query);
