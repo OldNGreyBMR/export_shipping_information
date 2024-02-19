@@ -13,6 +13,9 @@ declare(strict_types=1);
  * Version: 1.5.0 2023-12-21 Convert to admin zc_plugins format for zc 1.5.8; Renamed files to shipping_export2 for zc_plugins folder
  * Version: 1.5.0.a 2024-02-16 remove ASC from all group by statements issue #4 resolved
  *          1.5.1 2024-02-16 ln348 add 4 names option; added extra group by fields to avoid group by error when SQL mode 'ONLY_FULL_GROUP_BY' is set
+ *			1.5.1a ln582 add space before GROUP BY
+ *          1.5.1b mod for group by and distinct for one order per row; improve parsing of names to include unicode chars; 
+ *          1.5.1c improve opr to output correct number of columns
 */
 if (!isset($success_message))               {$success_message = '';}
 if (!isset($linevalue))                     { $linevalue = '';}
@@ -41,8 +44,8 @@ if (!isset($iso_country3_code_checked))     { $iso_country3_code_checked = '';}
 if (!isset($prod_details_checked))          { $prod_details_checked = '';}
 if (!isset($dload_include))                 { $dload_include = '';}
 
-define('VERSION', '1.5.1');
-define('ESIVERSION', '1.5.1');
+define('VERSION', '1.5.1c');
+define('ESIVERSION', '1.5.1c');
 require('includes/application_top.php');
 require(DIR_WS_CLASSES . 'currencies.php');
 $currencies = new currencies();
@@ -148,22 +151,30 @@ if (isset($_POST['download_csv'])) {
 
     } else { //  1 Order Per row (filelayout==1)
         //if (ESI_DEBUG == 'Yes') echo '<br/> ln148 filelayout should = 1 SHOULD BE one OPR = '. $_POST['filelayout'] . " \n"; //BMH DEBUG
-        $order_info = "SELECT o.orders_id, customers_email_address, delivery_name, delivery_company, delivery_street_address,
+        // BMH Added DISTINCT
+        $order_info = "SELECT DISTINCT o.orders_id, customers_email_address, delivery_name, delivery_company, delivery_street_address,
                 delivery_suburb, delivery_city, delivery_postcode, delivery_state, delivery_country, shipping_method,
-                customers_telephone, order_total, date_purchased, ot.value, os.comments, order_tax, o.orders_status, o.payment_method"; // BMH correct ANY_VALUE(os.comments) NO support in MariaDB
+                customers_telephone, order_total, date_purchased,  ot.value, order_tax, o.orders_status, o.payment_method"; // removed os.comments BMH correct ANY_VALUE(os.comments) NO support in MariaDB
+
+        $order_group_info = " GROUP BY o.orders_id, customers_email_address, delivery_name, delivery_company, delivery_street_address,
+                delivery_suburb, delivery_city, delivery_postcode, delivery_state, delivery_country, shipping_method,
+                customers_telephone, order_total, date_purchased,    ot.value,  order_tax, o.orders_status, o.payment_method ";
 
         if (!empty($_POST['iso_country2_code']) == 1) {
             $order_info = $order_info . ", cc.countries_iso_code_2";
+            $order_group_info = $order_group_info . ", cc.countries_iso_code_2";
         };
 
         if (!empty($_POST['iso_country3_code']) == 1) {
             $order_info = $order_info . ", cc.countries_iso_code_3";
+            $order_group_info = $order_group_info . ", cc.countries_iso_code_3";
         };
 
         $order_info = $order_info . " FROM " . TABLE_ORDERS . " o, " . TABLE_ORDERS_STATUS_HISTORY . " os, " . TABLE_ORDERS_TOTAL . " ot";
 
         if (!empty($_POST['iso_country2_code']) == 1 || !empty($_POST['iso_country3_code']) == 1) {
             $order_info = $order_info . ", " . TABLE_COUNTRIES . " cc";
+           
         };
 
         $order_info = $order_info . " WHERE o.orders_id = ot.orders_id AND ot.class = 'ot_shipping' ";
@@ -185,17 +196,13 @@ if (isset($_POST['download_csv'])) {
             $order_info = $order_info . " AND date_purchased BETWEEN '" . $start_date . "' AND '" . $end_date . "'"; // BMH Note: BETWEEN operator is inclusive:
         }
 
-        //$order_info = $order_info . " GROUP BY o.orders_id, ot.value ASC"; // BMH add o. & ot.value
-        //$order_info = $order_info . " GROUP BY o.orders_id, ot.value "; // BMH removed ASC; invalid syntax
-        $order_info = $order_info . " GROUP BY o.orders_id, customers_email_address, delivery_name, delivery_company, delivery_street_address,
-                delivery_suburb, delivery_city, delivery_postcode, delivery_state, delivery_country, shipping_method,
-                customers_telephone, order_total, date_purchased, ot.value, os.comments, order_tax, o.orders_status, o.payment_method "; // BMH removed ASC; invalid syntax
+        $order_info = $order_info . $order_group_info;  // BMH build GROUP BY
 
         // complete the sql statement for 1 order per row
 
         // count how many products in orders
         $max_num_products = "SELECT COUNT( * ) AS max_num_of_products
-                FROM (" . TABLE_ORDERS . " o LEFT JOIN " . TABLE_ORDERS_PRODUCTS . " op ON o.orders_id = op.orders_id), " . TABLE_ORDERS_TOTAL . " ot
+                FROM (" . TABLE_ORDERS . " o LEFT JOIN " . TABLE_ORDERS_PRODUCTS . " op ON  o.orders_id = op.orders_id), " . TABLE_ORDERS_TOTAL . " ot
                 WHERE o.orders_id = ot.orders_id
                 AND ot.class = 'ot_shipping'";
 
@@ -217,6 +224,7 @@ if (isset($_POST['download_csv'])) {
                 LIMIT 1";
 
         $max_num_products_result = $db->Execute($max_num_products);
+
         // check for results 
         if (count($max_num_products_result) < 1) { 
             echo ' NO records were returned for the selected target dates <br>';
@@ -225,6 +233,7 @@ if (isset($_POST['download_csv'])) {
         }
 
         $max_products = $max_num_products_result->fields['max_num_of_products'];
+        
         //if (ESI_DEBUG == 'Yes') echo '<br/> ln214 $max_products= ' . $max_products; //BMH DEBUG
     } // End File layout sql
 
@@ -263,7 +272,8 @@ if (isset($_POST['download_csv'])) {
         $str_header = $str_header . ",Order Date";
     };
 
-    if (($_POST['product_details']) == 1 ) { // add to header row
+    //if (($_POST['product_details']) == 1 ) { // add to header row
+        if ((!empty($_POST['product_details']) ? $_POST['product_details'] : 0 ) == 1 ) { // BMH  if unticked add to header row) ? == 1 ) { // add to header row
        // (ESI_DEBUG == 'Yes') echo '<br/> ln253 filelayout= ' . $_POST['filelayout'] . " \n"; //BMH DEBUG
         if (($_POST['filelayout']) == 2) { // 1 Product Per row RADIO
             //if (ESI_DEBUG == 'Yes') echo '<br/> ln255 product filelayout= ' . $_POST['filelayout'] . " \n"; //BMH DEBUG
@@ -312,8 +322,7 @@ if (isset($_POST['download_csv'])) {
             if (($_POST['order_total']) == 1) {
                 $str_header = $str_header . ",Order Total";
             };
-            if (($_POST['order_tax']) == 1
-            ) {
+            if (($_POST['order_tax']) == 1) {
                 $str_header = $str_header . ",Order Tax";
             };
             if (($_POST['payment_method']) == 1) {
@@ -340,7 +349,7 @@ if (isset($_POST['download_csv'])) {
     }
         // end Row header if product details selected
 
-    $str_header = $str_header . "\n";  // Print header row - data in on the next line
+    $str_header = $str_header . "\n";  // Print header row - data is on the next line
 
     /* dhc */ // DEBUG line [to keep]
     //  $str_header = $str_header . $order_info . "<br />\n" . $order_details->RecordCount() . "<br />\n" ;
@@ -352,7 +361,11 @@ if (isset($_POST['download_csv'])) {
         $str_export = $FIELDSTART . $order_details->fields['orders_id'] . $FIELDEND . $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['customers_email_address'] . $FIELDEND;
         if (isset($_POST['split_name']) == 1) {   // BMH isset
             $fullname = $order_details->fields['delivery_name'];
-            $count = preg_match_all("/[\w']+/", $fullname);  // BMH change from str_word_count which is inconsistent
+            // BMH ++ new code for unicode string
+            $s1 = array_map('trim', explode(' ', $fullname));
+            $s2 = array_filter($s1, function($value) { return $value !== ''; });
+            $count = count($s2);
+
             switch ($count) {
                 case 4:
                     list($first, $middle, $third, $last) = preg_split("/[\s,]+/", $fullname); // BMH add 4 word option 2024-02-16
@@ -391,7 +404,7 @@ if (isset($_POST['download_csv'])) {
 
         if (isset($_POST['customers_telephone']) == 1) {
             $str_export .= $FIELDSEPARATOR . $FIELDSTART . "'" . $order_details->fields['customers_telephone'] . $FIELDEND;
-        }; //BMH prepend single quote for excel to retain any leading zero
+        }; //BMH prepend single quote for Excel to retain any leading zero
 
         //*********Add Payment Method if selected***************/
         if (isset($_POST['orders_status_export']) == 1) {    // BMH isset
@@ -471,7 +484,10 @@ if (isset($_POST['download_csv'])) {
                 $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['products_quantity']  . $FIELDEND;
                 $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['products_model']  . $FIELDEND;
 
-                $str_export .= $FIELDSEPARATOR . $FIELDSTART . (str_replace('"', " ", $order_details->fields['products_name'] ?? '')) . $FIELDEND; // replace quotes with space if present
+                //$str_export .= $FIELDSEPARATOR . $FIELDSTART . (str_replace('"', "", $order_details->fields['products_name'] ?? '')) . $FIELDEND; // replace quotes with space if present
+                
+                $str_safequotes = str_replace('"', "", $order_details->fields['products_name'] ); // replace quotes with nothing if present
+            $str_export .= $FIELDSEPARATOR . $FIELDSTART . str_replace(array("\r\n", "\r", "\n"), " ", $str_safequotes) . $FIELDEND;
 
                 // find product attributes
                 $product_attributes_rows = "SELECT Count(*) as num_rows
@@ -479,9 +495,10 @@ if (isset($_POST['download_csv'])) {
                 WHERE orders_id = " . $order_details->fields['orders_id'] . "
                 AND orders_products_id = " . $order_details->fields['orders_products_id'] . "";
                 $attributes_query_rows = $db->Execute($product_attributes_rows);
+
                 $num_rows = $attributes_query_rows->fields['num_rows'];
 
-                if ($num_rows > 0) {
+                if ( $num_rows > 0) {
                     $product_attributes_query = "SELECT *
                     FROM " . TABLE_ORDERS_PRODUCTS_ATTRIBUTES . "
                     WHERE orders_id = " . $order_details->fields['orders_id']  . "
@@ -516,7 +533,7 @@ if (isset($_POST['download_csv'])) {
                 } // end if
 
             } else { // 1 OPR
-                if (ESI_DEBUG == 'Yes') echo '<br/> ln522 product_details = 1 & OPR' . "\n"; // BMH DEBUG
+                if (ESI_DEBUG == 'Yes') echo '<br/> ln542 product_details = 1 & OPR' . "\n"; // BMH DEBUG
                 /**************the following exports 1 OPR w/ attributes) ****************/
                 $oID = zen_db_prepare_input($order_details->fields['orders_id']);
                 $oIDME = $order_details->fields['orders_id'];
@@ -525,7 +542,12 @@ if (isset($_POST['download_csv'])) {
                 for ($i = 0, $n = sizeof($order->products); $i < $n; $i++) {
                     $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order->products[$i]['qty'] . $FIELDEND;
                     $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order->products[$i]['model']  . $FIELDEND;
-                    $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order->products[$i]['name'] . $FIELDEND . $FIELDSEPARATOR;
+
+                    //$str_export .= $FIELDSEPARATOR . $FIELDSTART . $order->products[$i]['name'] . $FIELDEND . $FIELDSEPARATOR;
+
+                    $str_safequotes = str_replace('"', "", $order->products[$i]['name']);  // BMH PARSE NAME
+                     $str_export .= $FIELDSEPARATOR . $FIELDSTART . $str_safequotes . $FIELDEND . $FIELDSEPARATOR;
+
                     // attributes
                     if (isset($order->products[$i]['attributes']) && (($k = sizeof($order->products[$i]['attributes'] )) > 0)) {
                         //$str_export .= $FIELDSEPARATOR;
@@ -535,13 +557,14 @@ if (isset($_POST['download_csv'])) {
                             $str_export .= $order->products[$i]['attributes'][$j]['option'] . ': ' . str_replace(array("\r\n", "\r", "\n"), " ", $str_safequotes) . $ATTRIBSEPARATOR;
                         }
                         $str_export .= $FIELDEND;
-                    } else { // add a BLANK field to the export file for "consistancy"
+                    } else { // add a BLANK field to the export file for "consistency"
                        // $str_export .= $FIELDSEPARATOR . $FIELDSTART . $FIELDEND; // add blank space for filler
                     }
                     $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order->products[$i]['final_price'] . $FIELDEND;
                 }
                 if ($n < $max_products)  {
-                    for ($f = 0, $g = $max_products; $f < $g-1; $f++) {
+                    //for ($f = 0, $g = $max_products; $f < $g-1; $f++) {
+                    for ($f = 0, $g = $max_products; $f < $g-$n; $f++) {
                         $str_export .= $FIELDSEPARATOR . $FIELDSTART .  "" . $FIELDEND;
                         $str_export .= $FIELDSEPARATOR . $FIELDSTART .  "" . $FIELDEND;
                         $str_export .= $FIELDSEPARATOR . $FIELDSTART .  "" . $FIELDEND;
@@ -561,7 +584,7 @@ if (isset($_POST['download_csv'])) {
 
         if (($_POST['order_discount']) == 1) {  // BMH isset
             // if order discount was selected, then run the query to pull the data for adding it to the export string.
-            // Run a query to pull the Order Discount total if present ; no discount on order-product so remove from inner join not all discounts are negaitive numbers for force by -ABS
+            // Run a query to pull the Order Discount total if present ; no discount on order-product so remove from inner join not all discounts are negative numbers for force by -ABS
             $orders_discount_query = "SELECT DISTINCT o.orders_id,  sum(-ABS(round(ot.value,2))) AS value
                 FROM (" . TABLE_ORDERS . " o LEFT JOIN  " . TABLE_ORDERS_TOTAL . " ot ON o.orders_id = ot.orders_id)
                 WHERE o.orders_id = ot.orders_id
