@@ -1,13 +1,10 @@
 Module Name
 ==================
 **Export Shipping Information
-Version Date
-============
-V1.5.1 2024-02-16
 
 Version Date
 ============
-V1.5.0 2023-12-21
+V1.5.2 2024-03-17
 
 Updated by:
 =======
@@ -15,7 +12,7 @@ OldNGrey (BMH)
 
 Compatibility
 =============
-Compatible with Zen Cart v1.5.7 and v1.5.8a PHP 7.4 to PHP 8.3
+Compatible with Zen Cart v1.5.7 and v1.5.8a and v2.0.0 PHP 7.4 to PHP 8.3
 http://www.zen-cart.com
 
 Support Thread
@@ -60,12 +57,6 @@ _ _Install / Ugrade ONLY FOR ZC V 1.5.7
 
 Changes
 =======
-BMH 2024-02-16
-	set version to 1.5.0
-	issue #6 Group by error if SQL Mode ONLY_FULL_GROUP_BY used
-	issue #5 use new aadmin page registration key to avoid possible clash with previous versions
-	issue #3 Failure when 1 Order per row + Full Product Details when there are no records for a selected date range.
-	
 BMH 2023-12-21
 	set verion to 1.5.0
 	for zc 1.5.7 old files structure maintained
