@@ -1,10 +1,10 @@
 Module Name
 ==================
-**Export Shipping Information
+**Export Shipping Information 2
 
 Version Date
 ============
-V1.5.2 2024-03-17
+V1.5.3 2024-11-19
 
 Updated by:
 =======
@@ -12,7 +12,7 @@ OldNGrey (BMH)
 
 Compatibility
 =============
-Compatible with Zen Cart v1.5.7 and v1.5.8a and v2.0.0 PHP 7.4 to PHP 8.3
+Compatible with Zen Cart v1.5.8a and v2.0.1 v2.1.0 PHP 8.0 to PHP 8.3
 http://www.zen-cart.com
 
 Support Thread
@@ -39,26 +39,24 @@ _ _Install / Upgrade for zc 1.5.8+
 	Log into Admin and run the install.sql files through admin > Tools > Install SQL Patches
 	Log into Admin > Modules > Plugin Manager locate Export Shipping & Order Information and install
 
-_ _Install / Ugrade ONLY FOR ZC V 1.5.7 
-==================
-1. Upload the entire contents of the "admin" folder to your website. All directories are already named for you and there are no files to overwrite so it should be easy.
-   NOTE: If you changed the name of your "admin" directory to something else, then upload
-         to that directory.
-
-2. Login Admin > Tools > Install SQL Patches and run the query (copy and paste into the admin to run) found in the "INSTALL.sql" file provided with the download.
-   NOTE: If you are upgrading from a previous version, you do not need to re-run this SQL command as your
-         database should already contain this field.
-
-3. Set directory permissions on /images/uploads/ to "777" (WRITE access) if not already done.
-   If emailing files to suppliers, you will need to write the file info to a directory on your
-   server. The directory the files are written to is /images/uploads/.
-
-4. Enjoy!
+3. Enjoy!
 
 Changes
 =======
+Version Date
+============
+BMH 2024-11-19
+	check each optional array key eg tickboxes; tidy up html
+BMH 2024-03-17
+	remove ASC from all group by statements issue #4 resolved
+	add 4 names option; added extra group by fields to avoid group by error when SQL mode 'ONLY_FULL_GROUP_BY' is set
+	add space before GROUP BY
+	mod for group by and distinct for one order per row; improve parsing of names to include unicode chars;
+	improve opr to output correct number of columns
+	admin head update
+
 BMH 2023-12-21
-	set verion to 1.5.0
+	set version to 1.5.0
 	for zc 1.5.7 old files structure maintained
 	for zc 1.5.8+ use the zc_plugins structure
 	
