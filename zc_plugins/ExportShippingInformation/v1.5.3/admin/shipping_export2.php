@@ -13,6 +13,11 @@ declare(strict_types=1);
  * Version: 1.5.0 2023-12-21 Convert to admin zc_plugins format for zc 1.5.8; Renamed files to shipping_export2 for zc_plugins folder
  * Version: 1.5.0.a 2024-02-16 remove ASC from all group by statements issue #4 resolved
  *          1.5.1 2024-02-16 ln348 add 4 names option; added extra group by fields to avoid group by error when SQL mode 'ONLY_FULL_GROUP_BY' is set
+ *			1.5.1a ln582 add space before GROUP BY
+ *          1.5.1b mod for group by and distinct for one order per row; improve parsing of names to include unicode chars;
+ *          1.5.1c improve opr to output correct number of columns
+ * Version: 1.5.2 admin head update
+ * Version: 1.5.3 check each optional array key eg tickboxes; tidy up html
 */
 if (!isset($success_message))               {$success_message = '';}
 if (!isset($linevalue))                     { $linevalue = '';}
@@ -41,8 +46,8 @@ if (!isset($iso_country3_code_checked))     { $iso_country3_code_checked = '';}
 if (!isset($prod_details_checked))          { $prod_details_checked = '';}
 if (!isset($dload_include))                 { $dload_include = '';}
 
-define('VERSION', '1.5.1');
-define('ESIVERSION', '1.5.1');
+define('VERSION', '1.5.3');
+define('ESIVERSION', '1.5.3');
 require('includes/application_top.php');
 require(DIR_WS_CLASSES . 'currencies.php');
 $currencies = new currencies();
@@ -103,7 +108,7 @@ if (isset($_POST['download_csv'])) {
     //**************************************************************
 
     if (($_POST['filelayout']) == 2) { // 1 Product Per row RADIO
-       // if (ESI_DEBUG == 'Yes') echo '<br/> ln104 filelayout=2 product per row' . "\n"; //BMH DEBUG
+
         $order_info = "SELECT o.orders_id, customers_email_address, delivery_name, delivery_company, delivery_street_address, delivery_suburb,
         delivery_city, delivery_postcode, delivery_state, delivery_country, shipping_method, customers_telephone, order_total, op.products_model,
         products_name, op.products_price, final_price, op.products_quantity, op.products_tax, date_purchased, ot.value, orders_products_id, order_tax,
@@ -132,9 +137,10 @@ if (isset($_POST['download_csv'])) {
 
         $order_info = $order_info . "AND ot.class = 'ot_shipping'";
 
-        if ($_POST['dload_include'] != 1) {
-            $order_info = $order_info . " AND downloaded_ship='no'";
+        if ((isset($_POST['dload_include'])) == 1 ) {
+            $order_info = $order_info . " AND downloaded_ship='yes'";
         }
+
         if ($_POST['status_target'] == 2) {
             $order_info = $order_info . " AND o.orders_status = '" . $_POST['order_status'] . "'";
         }
@@ -147,23 +153,30 @@ if (isset($_POST['download_csv'])) {
         // ++++++++++++++++ //
 
     } else { //  1 Order Per row (filelayout==1)
-        //if (ESI_DEBUG == 'Yes') echo '<br/> ln148 filelayout should = 1 SHOULD BE one OPR = '. $_POST['filelayout'] . " \n"; //BMH DEBUG
-        $order_info = "SELECT o.orders_id, customers_email_address, delivery_name, delivery_company, delivery_street_address,
+        // BMH Added DISTINCT
+        $order_info = "SELECT DISTINCT o.orders_id, customers_email_address, delivery_name, delivery_company, delivery_street_address,
                 delivery_suburb, delivery_city, delivery_postcode, delivery_state, delivery_country, shipping_method,
-                customers_telephone, order_total, date_purchased, ot.value, os.comments, order_tax, o.orders_status, o.payment_method"; // BMH correct ANY_VALUE(os.comments) NO support in MariaDB
+                customers_telephone, order_total, date_purchased,  ot.value, order_tax, o.orders_status, o.payment_method"; // removed os.comments BMH correct ANY_VALUE(os.comments) NO support in MariaDB
+
+        $order_group_info = " GROUP BY o.orders_id, customers_email_address, delivery_name, delivery_company, delivery_street_address,
+                delivery_suburb, delivery_city, delivery_postcode, delivery_state, delivery_country, shipping_method,
+                customers_telephone, order_total, date_purchased,    ot.value,  order_tax, o.orders_status, o.payment_method ";
 
         if (!empty($_POST['iso_country2_code']) == 1) {
             $order_info = $order_info . ", cc.countries_iso_code_2";
+            $order_group_info = $order_group_info . ", cc.countries_iso_code_2";
         };
 
         if (!empty($_POST['iso_country3_code']) == 1) {
             $order_info = $order_info . ", cc.countries_iso_code_3";
+            $order_group_info = $order_group_info . ", cc.countries_iso_code_3";
         };
 
         $order_info = $order_info . " FROM " . TABLE_ORDERS . " o, " . TABLE_ORDERS_STATUS_HISTORY . " os, " . TABLE_ORDERS_TOTAL . " ot";
 
         if (!empty($_POST['iso_country2_code']) == 1 || !empty($_POST['iso_country3_code']) == 1) {
             $order_info = $order_info . ", " . TABLE_COUNTRIES . " cc";
+
         };
 
         $order_info = $order_info . " WHERE o.orders_id = ot.orders_id AND ot.class = 'ot_shipping' ";
@@ -185,17 +198,13 @@ if (isset($_POST['download_csv'])) {
             $order_info = $order_info . " AND date_purchased BETWEEN '" . $start_date . "' AND '" . $end_date . "'"; // BMH Note: BETWEEN operator is inclusive:
         }
 
-        //$order_info = $order_info . " GROUP BY o.orders_id, ot.value ASC"; // BMH add o. & ot.value
-        //$order_info = $order_info . " GROUP BY o.orders_id, ot.value "; // BMH removed ASC; invalid syntax
-        $order_info = $order_info . " GROUP BY o.orders_id, customers_email_address, delivery_name, delivery_company, delivery_street_address,
-                delivery_suburb, delivery_city, delivery_postcode, delivery_state, delivery_country, shipping_method,
-                customers_telephone, order_total, date_purchased, ot.value, os.comments, order_tax, o.orders_status, o.payment_method "; // BMH removed ASC; invalid syntax
+        $order_info = $order_info . $order_group_info;  // BMH build GROUP BY
 
         // complete the sql statement for 1 order per row
 
         // count how many products in orders
         $max_num_products = "SELECT COUNT( * ) AS max_num_of_products
-                FROM (" . TABLE_ORDERS . " o LEFT JOIN " . TABLE_ORDERS_PRODUCTS . " op ON o.orders_id = op.orders_id), " . TABLE_ORDERS_TOTAL . " ot
+                FROM (" . TABLE_ORDERS . " o LEFT JOIN " . TABLE_ORDERS_PRODUCTS . " op ON  o.orders_id = op.orders_id), " . TABLE_ORDERS_TOTAL . " ot
                 WHERE o.orders_id = ot.orders_id
                 AND ot.class = 'ot_shipping'";
 
@@ -212,29 +221,28 @@ if (isset($_POST['download_csv'])) {
         }
 
         //$max_num_products = $max_num_products . " GROUP BY o.orders_id ASC // BMH removed ASC; invalid syntax
-        $max_num_products = $max_num_products . " GROUP BY o.orders_id 
+        $max_num_products = $max_num_products . " GROUP BY o.orders_id
                 ORDER BY max_num_of_products DESC
                 LIMIT 1";
 
         $max_num_products_result = $db->Execute($max_num_products);
-        // check for results 
-        if (count($max_num_products_result) < 1) { 
+
+        // check for results
+        if (count($max_num_products_result) < 1) {
             echo ' NO records were returned for the selected target dates <br>';
            // $results_check = count($max_num_products_result);
             die('Press the BACK button in your browser to return to the previous page.');
         }
 
         $max_products = $max_num_products_result->fields['max_num_of_products'];
-        //if (ESI_DEBUG == 'Yes') echo '<br/> ln214 $max_products= ' . $max_products; //BMH DEBUG
     } // End File layout sql
 
     $order_details = $db->Execute($order_info);     // run the sql
 
     /******************Begin Set Header Row Information*****************************/
-    //if (ESI_DEBUG == 'Yes') echo '<br/> ln220 begin headers' . " \n"; //BMH DEBUG
     $str_header = "Order ID,Customer Email";
 
-    if ($_POST['split_name'] == 1) { //If name split is desired then split it.
+    if ((isset($_POST['split_name'])) == 1) { //If name split is desired then split it.
         $str_header = $str_header . ",First Name,Last Name";
     } else {
         $str_header = $str_header . ",Delivery Name";
@@ -263,10 +271,8 @@ if (isset($_POST['download_csv'])) {
         $str_header = $str_header . ",Order Date";
     };
 
-    if (($_POST['product_details']) == 1 ) { // add to header row
-       // (ESI_DEBUG == 'Yes') echo '<br/> ln253 filelayout= ' . $_POST['filelayout'] . " \n"; //BMH DEBUG
+    if (isset(($_POST['product_details'])) == 1 ) { // add to header row
         if (($_POST['filelayout']) == 2) { // 1 Product Per row RADIO
-            //if (ESI_DEBUG == 'Yes') echo '<br/> ln255 product filelayout= ' . $_POST['filelayout'] . " \n"; //BMH DEBUG
             $str_header = $str_header . ",Product Qty,Product Model,Product Name,Product Attributes,Products Price"; //BMH reposition attributes
             $str_header = $str_header . ",Line cost";
             $str_header = $str_header . ",Line tax";
@@ -312,8 +318,7 @@ if (isset($_POST['download_csv'])) {
             if (($_POST['order_total']) == 1) {
                 $str_header = $str_header . ",Order Total";
             };
-            if (($_POST['order_tax']) == 1
-            ) {
+            if (($_POST['order_tax']) == 1) {
                 $str_header = $str_header . ",Order Tax";
             };
             if (($_POST['payment_method']) == 1) {
@@ -340,10 +345,8 @@ if (isset($_POST['download_csv'])) {
     }
         // end Row header if product details selected
 
-    $str_header = $str_header . "\n";  // Print header row - data in on the next line
+    $str_header = $str_header . "\n";  // Print header row - data is on the next line
 
-    /* dhc */ // DEBUG line [to keep]
-    //  $str_header = $str_header . $order_info . "<br />\n" . $order_details->RecordCount() . "<br />\n" ;
     /******************End Header Row Information*****************************/
 
     $str_full_export = "";
@@ -352,7 +355,11 @@ if (isset($_POST['download_csv'])) {
         $str_export = $FIELDSTART . $order_details->fields['orders_id'] . $FIELDEND . $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['customers_email_address'] . $FIELDEND;
         if (isset($_POST['split_name']) == 1) {   // BMH isset
             $fullname = $order_details->fields['delivery_name'];
-            $count = preg_match_all("/[\w']+/", $fullname);  // BMH change from str_word_count which is inconsistent
+            // new code for unicode string
+            $s1 = array_map('trim', explode(' ', $fullname));
+            $s2 = array_filter($s1, function($value) { return $value !== ''; });
+            $count = count($s2);
+
             switch ($count) {
                 case 4:
                     list($first, $middle, $third, $last) = preg_split("/[\s,]+/", $fullname); // BMH add 4 word option 2024-02-16
@@ -391,30 +398,29 @@ if (isset($_POST['download_csv'])) {
 
         if (isset($_POST['customers_telephone']) == 1) {
             $str_export .= $FIELDSEPARATOR . $FIELDSTART . "'" . $order_details->fields['customers_telephone'] . $FIELDEND;
-        }; //BMH prepend single quote for excel to retain any leading zero
+        };                                                      //BMH prepend single quote for Excel to retain any leading zero
 
         //*********Add Payment Method if selected***************/
-        if (isset($_POST['orders_status_export']) == 1) {    // BMH isset
-            // if order status was selected, then run the query to pull the data for adding it to the export string.
-            // Run a query to pull the Order Status if present
+        if (isset($_POST['orders_status_export']) == 1) {       // Run a query to pull the Order Status if present then run the query to pull the data for adding it to the export string.
+
             $orders_status_query = "SELECT orders_status_name
                 FROM (" . TABLE_ORDERS_STATUS . ")
                 WHERE orders_status_id=" . $order_details->fields['orders_status'] . "";
             $orders_status = $db->Execute($orders_status_query);
 
             $num_rows = $orders_status->RecordCount();
-            if ($num_rows > 0) { // if records were found
+            if ($num_rows > 0) {                                // if records were found
                 $str_export .= $FIELDSEPARATOR . $FIELDSTART . $orders_status->fields['orders_status_name'] . $FIELDEND; //add discount amt to export string
-            } else { // add a BLANK field to the export file for "consistency"
+            } else {                                            // add a BLANK field to the export file for "consistency"
                 $str_export .= $FIELDSEPARATOR . $FIELDSTART . $FIELDEND; // add blank space for filler
             } // end if
         }  // End if for determining if order discount was selected to export.
 
         //*************bof ISO Country Codes********************//
-        if (isset($_POST['iso_country2_code']) == 1) { // if iso country 2 was selected, then add it to the export string.
+        if (isset($_POST['iso_country2_code']) == 1) {          // if iso country 2 was selected, then add it to the export string.
             $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['countries_iso_code_2'] . $FIELDEND; //add ISO country code to export string
         }
-        if (isset($_POST['iso_country3_code']) == 1) { // BMH isset //if iso country 3 was selected, then add it to the export string.
+        if (isset($_POST['iso_country3_code']) == 1) {          // if iso country 3 was selected, then add it to the export string.
             $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['countries_iso_code_3'] . $FIELDEND; //add ISO country code to export string
         }
         //*************eof ISO Country Codes********************//
@@ -423,9 +429,9 @@ if (isset($_POST['download_csv'])) {
         if (isset($_POST['order_comments']) == 1) {
             $orders_comments_query = "SELECT *  FROM " . TABLE_ORDERS_STATUS_HISTORY . " WHERE orders_id = " . $order_details->fields['orders_id'] . "
                 GROUP BY orders_id, orders_status_id, orders_status_history_id, date_added, customer_notified, comments, updated_by
-                ORDER BY orders_status_history_id ASC"; // BMH MySQLD added extra fields to avoid group by error when SQL mode 'ONLY_FULL_GROUP_BY' is set
+                ORDER BY orders_status_history_id ASC";         // BMH MySQLD added extra fields to avoid group by error when SQL mode 'ONLY_FULL_GROUP_BY' is set
             $orders_comments = $db->Execute($orders_comments_query);
-            $str_safequotes = str_replace('"', "'", $orders_comments->fields['comments'] ); // replace quotes with single quotes if present
+            $str_safequotes = str_replace('"', "'", $orders_comments->fields['comments'] );     // replace quotes with single quotes if present
             $str_export .= $FIELDSEPARATOR . $FIELDSTART . str_replace(array("\r\n", "\r", "\n"), " ", $str_safequotes) . $FIELDEND; // Remove any line breaks in first comment and print to export string
         }
         // eof comments
@@ -436,7 +442,7 @@ if (isset($_POST['download_csv'])) {
 
         //******************************************************************//
         // bof sub-totals
-        if (isset($_POST['order_subtotal']) == 1) { // BMH isset
+        if (isset($_POST['order_subtotal']) == 1) {
             $orders_subtotal_query = "SELECT o.orders_id, customers_email_address, delivery_name, delivery_company,
                 delivery_street_address, delivery_suburb, delivery_city, delivery_postcode, delivery_state, delivery_country,
                 shipping_method, customers_telephone, order_total, products_model, products_name, products_price, final_price,
@@ -445,8 +451,9 @@ if (isset($_POST['download_csv'])) {
                 WHERE o.orders_id = ot.orders_id
                 AND ot.class = 'ot_subtotal'
                 AND ot.orders_id = " . $order_details->fields['orders_id'] . "";
-            if ($_POST['dload_include'] != 1) {
-                $orders_subtotal_query = $orders_subtotal_query . " AND downloaded_ship='no'";
+
+            if ((isset($_POST['dload_include']) && $_POST['dload_include'] == 1)) {
+            $order_info = $order_info . " AND downloaded_ship='no'";
             }
             if ($_POST['status_target'] == 2) {
                 $orders_subtotal_query = $orders_subtotal_query . " AND o.orders_status = '" . $_POST['order_status'] . "'";
@@ -460,18 +467,18 @@ if (isset($_POST['download_csv'])) {
 
         } // eof sub-totals
 
-        if (isset($_POST['product_details']) == 1) {     // Order details should be added to the export string.
-            if (ESI_DEBUG == 'Yes') echo '<br/> ln447 product_details=1 ' ." \n"; //BMH DEBUG
-            if (($_POST['filelayout']) == 2) {      // 1 PPR RADIO
-                if (ESI_DEBUG == 'Yes') echo '<br/> ln449 filelayout = 2 is ' . $_POST['filelayout'] . "\n" ;  //BMH DEBUG
+        if (isset($_POST['product_details']) == 1) {            // Order details should be added to the export string.
+            if (($_POST['filelayout']) == 2) {                  // 1 PPR RADIO
+
                 // bmh CHANGE ORDER of fields
-                if (!isset($linevalue)) $linevalue = 0;   // BMH calc line cost ; change from defined to isset
-                if (!isset($linetax))   $linetax = 0;       // BMH calc line tax
+                if (!isset($linevalue)) $linevalue = 0;         // BMH calc line cost ; change from defined to isset
+                if (!isset($linetax))   $linetax = 0;           // BMH calc line tax
 
                 $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['products_quantity']  . $FIELDEND;
                 $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['products_model']  . $FIELDEND;
 
-                $str_export .= $FIELDSEPARATOR . $FIELDSTART . (str_replace('"', " ", $order_details->fields['products_name'] ?? '')) . $FIELDEND; // replace quotes with space if present
+                $str_safequotes = str_replace('"', "", $order_details->fields['products_name'] );   // replace quotes with nothing if present
+                $str_export .= $FIELDSEPARATOR . $FIELDSTART . str_replace(array("\r\n", "\r", "\n"), " ", $str_safequotes) . $FIELDEND;
 
                 // find product attributes
                 $product_attributes_rows = "SELECT Count(*) as num_rows
@@ -479,15 +486,16 @@ if (isset($_POST['download_csv'])) {
                 WHERE orders_id = " . $order_details->fields['orders_id'] . "
                 AND orders_products_id = " . $order_details->fields['orders_products_id'] . "";
                 $attributes_query_rows = $db->Execute($product_attributes_rows);
+
                 $num_rows = $attributes_query_rows->fields['num_rows'];
 
-                if ($num_rows > 0) {
+                if ( $num_rows > 0) {
                     $product_attributes_query = "SELECT *
                     FROM " . TABLE_ORDERS_PRODUCTS_ATTRIBUTES . "
                     WHERE orders_id = " . $order_details->fields['orders_id']  . "
                     AND orders_products_id = " . $order_details->fields['orders_products_id'] . "";
                     $attributes_query_results = $db->Execute($product_attributes_query);
-                    $str_export .= $FIELDSEPARATOR . $FIELDSTART;        // BMH include $FIELDSEPARATOR
+                    $str_export .= $FIELDSEPARATOR . $FIELDSTART;   // BMH include $FIELDSEPARATOR
                     for ($i = 0, $n = $num_rows; $i < $n; $i++) {
                         //dhc
                         $str_safequotes = str_replace('"', "'", $attributes_query_results->fields['products_options_values']);
@@ -506,17 +514,15 @@ if (isset($_POST['download_csv'])) {
                 $linetax = $order_details->fields['products_tax'] / 100 * $order_details->fields['final_price'];
                 $str_export .= $FIELDSEPARATOR . $FIELDSTART . $linevalue . $FIELDEND;
                 $str_export .= $FIELDSEPARATOR . $FIELDSTART . $linetax .  $FIELDEND;
-                // BMH
 
-                $num_rows = $orders_subtotal->RecordCount();                // how many are returned
+                $num_rows = $orders_subtotal->RecordCount();    // how many are returned
                 if ($num_rows > 0) {
                     $str_export .= $FIELDSEPARATOR . $FIELDSTART . $orders_subtotal->fields['value'] . $FIELDEND; //add subtotal amt to export string
-                } else { // add a BLANK field to the export file for "consistency"
-                    $str_export .= $FIELDSEPARATOR . $FIELDSTART . $FIELDEND; // add blank space for filler
+                } else {                                        // add a BLANK field to the export file for "consistency"
+                    $str_export .= $FIELDSEPARATOR . $FIELDSTART . $FIELDEND;   // add blank space for filler
                 } // end if
 
             } else { // 1 OPR
-                if (ESI_DEBUG == 'Yes') echo '<br/> ln522 product_details = 1 & OPR' . "\n"; // BMH DEBUG
                 /**************the following exports 1 OPR w/ attributes) ****************/
                 $oID = zen_db_prepare_input($order_details->fields['orders_id']);
                 $oIDME = $order_details->fields['orders_id'];
@@ -525,23 +531,25 @@ if (isset($_POST['download_csv'])) {
                 for ($i = 0, $n = sizeof($order->products); $i < $n; $i++) {
                     $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order->products[$i]['qty'] . $FIELDEND;
                     $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order->products[$i]['model']  . $FIELDEND;
-                    $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order->products[$i]['name'] . $FIELDEND . $FIELDSEPARATOR;
+
+                    $str_safequotes = str_replace('"', "", $order->products[$i]['name']);  // BMH PARSE NAME
+                     $str_export .= $FIELDSEPARATOR . $FIELDSTART . $str_safequotes . $FIELDEND . $FIELDSEPARATOR;
+
                     // attributes
                     if (isset($order->products[$i]['attributes']) && (($k = sizeof($order->products[$i]['attributes'] )) > 0)) {
-                        //$str_export .= $FIELDSEPARATOR;
                         $str_export .= $FIELDSTART;
                         for ($j = 0; $j < $k; $j++) {
                             $str_safequotes = str_replace('"', "'", $order->products[$i]['attributes'][$j]['value']);
                             $str_export .= $order->products[$i]['attributes'][$j]['option'] . ': ' . str_replace(array("\r\n", "\r", "\n"), " ", $str_safequotes) . $ATTRIBSEPARATOR;
                         }
                         $str_export .= $FIELDEND;
-                    } else { // add a BLANK field to the export file for "consistancy"
+                    } else { // add a BLANK field to the export file for "consistency"
                        // $str_export .= $FIELDSEPARATOR . $FIELDSTART . $FIELDEND; // add blank space for filler
                     }
                     $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order->products[$i]['final_price'] . $FIELDEND;
                 }
                 if ($n < $max_products)  {
-                    for ($f = 0, $g = $max_products; $f < $g-1; $f++) {
+                    for ($f = 0, $g = $max_products; $f < $g-$n; $f++) {
                         $str_export .= $FIELDSEPARATOR . $FIELDSTART .  "" . $FIELDEND;
                         $str_export .= $FIELDSEPARATOR . $FIELDSTART .  "" . $FIELDEND;
                         $str_export .= $FIELDSEPARATOR . $FIELDSTART .  "" . $FIELDEND;
@@ -559,46 +567,47 @@ if (isset($_POST['download_csv'])) {
             $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['value'] . $FIELDEND;
         };   // BMH isset
 
-        if (($_POST['order_discount']) == 1) {  // BMH isset
+        if (($_POST['order_discount']) == 1) {
             // if order discount was selected, then run the query to pull the data for adding it to the export string.
-            // Run a query to pull the Order Discount total if present ; no discount on order-product so remove from inner join not all discounts are negaitive numbers for force by -ABS
+            // Run a query to pull the Order Discount total if present ; no discount on order-product so remove from inner join not all discounts are negative numbers for force by -ABS
             $orders_discount_query = "SELECT DISTINCT o.orders_id,  sum(-ABS(round(ot.value,2))) AS value
                 FROM (" . TABLE_ORDERS . " o LEFT JOIN  " . TABLE_ORDERS_TOTAL . " ot ON o.orders_id = ot.orders_id)
                 WHERE o.orders_id = ot.orders_id
                 AND ot.class IN  ('ot_coupon' , 'ot_custom', 'ot_group_pricing', 'ot_payment_type', 'ot_paymentmodulefee')
-                AND ot.orders_id = " . $order_details->fields['orders_id'] . ""; /* BMH changed AND ot.class = 'ot_coupon' TO include other discounts
+                AND ot.orders_id = " . $order_details->fields['orders_id'] . "";    /* BMH changed AND ot.class = 'ot_coupon' TO include other discounts
                                                                                     AND ot.class IN  ('ot_coupon' , 'ot_custom', 'ot_group_pricing',
                                                                                     'ot_payment_type' , 'ot_paymentmodule) */
-            if ($_POST['dload_include'] != 1) {
-                $orders_discount_query = $orders_discount_query . " AND downloaded_ship='no'";
+
+            if ((isset($_POST['dload_include']) && $_POST['dload_include'] == 1)) {
+                $order_info = $order_info . " AND downloaded_ship='no'";
             }
+
             if ($_POST['status_target'] == 2) {
                 $orders_discount_query = $orders_discount_query . " AND o.orders_status = '" . $_POST['order_status'] . "'";
             }
             if ($_POST['start_date'] != '' && $_POST['end_date'] != '') {
                 $orders_discount_query = $orders_discount_query . " AND date_purchased BETWEEN '" . $start_date . "' AND '" . $end_date . "'";
-                //$orders_discount_query = $orders_discount_query . " AND date_purchased >= '". $start_date ."' AND date_purchased <= '". $end_date ."'";
+
             }
             $orders_discount_query = $orders_discount_query . " GROUP BY o.orders_id" ;
             $orders_discount_query = $orders_discount_query . " ORDER BY orders_id ASC";
 
             $orders_discount = $db->Execute($orders_discount_query);
 
-            //$recordcount = mysql_query($orders_discount_query);
             $num_rows = $orders_discount->RecordCount();
-            if ($num_rows > 0) { // if records were found
+            if ($num_rows > 0) {                                // if records were found
                 $str_export .= $FIELDSEPARATOR . $FIELDSTART .  $orders_discount->fields['value'] . $FIELDEND; //add discount amt to export string // BMH add negative symbol
-            } else { // add a BLANK field to the export file for "consistency"
+            } else {                                            // add a BLANK field to the export file for "consistency"
                 $str_export .= $FIELDSEPARATOR . $FIELDSTART . $FIELDEND; // add blank space for filler
             } // end if
         } // End if for determining if order discount was selected to export.
 
-        if (isset($_POST['order_total']) == 1) {    // BMH isset
+        if (isset($_POST['order_total']) == 1) {
             $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['order_total'] . $FIELDEND;
         };
         if (isset($_POST['order_tax']) == 1) {
             $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['order_tax'] . $FIELDEND;
-        };  // BMH isset
+        };
 
         //*********Add Payment Method if selected***************/
         if (isset($_POST['payment_method']) == 1) {  // BMH isset
@@ -620,10 +629,9 @@ if (isset($_POST['download_csv'])) {
 
     /**************************************Process the export file**************************************************/
     if ($save_to_file_checked == 1) { // saving to a file for email attachement, so write and ready else do regular output (prompt for download)
-        // Do not set headers becuase we are going to email the file to the supplier.
+        // Do not set headers because we are going to email the file to the supplier.
         //open output file for writing
         $f = fopen(DIR_FS_EMAIL_EXPORT . $file, 'w+');
-        //fwrite($f,$str_export);
         // swguy
         if ($_POST['include_header_row'] == 1) { //Include the Header Row In The Export Else Leave out
             fwrite($f, $str_header);
@@ -638,7 +646,7 @@ if (isset($_POST['download_csv'])) {
         //Set Success Message
         $success_message = "<span style='color:#ff0000;font-weight:bold;font-size:14px;'>File processed successfully!</span>";
         /***************************Begin Update records in db if selected by user***************************/
-        if ($_POST['export_test'] != 1) { //Not testing so update
+        if ($_POST['export_test'] != 1) {       //Not testing so update
             $orders_update_query = "UPDATE " . TABLE_ORDERS . " SET downloaded_ship='yes' WHERE downloaded_ship='no'";
             if ($_POST['start_date'] != '' && $_POST['end_date'] != '') {
                 $orders_update_query = $orders_update_query . " AND date_purchased BETWEEN '" . $start_date . "' AND '" . $end_date . "'";
@@ -647,17 +655,17 @@ if (isset($_POST['download_csv'])) {
             $db->Execute($orders_update_query);
         }
         /***************************End Update records in db if selected by user***************************/
-    } else { // This export should be in the format of a file download so set page headers.
+    } else {                    // This export should be in the format of a file download so set page headers.
         Header('Content-type: application/csv');
         Header("Content-disposition: attachment; filename=" . $file . "");
-        if (isset($_POST['include_header_row']) == 1) { //Include the Header Row In The Export Else Leave out  // BMH isset
+        if (isset($_POST['include_header_row']) == 1) {     //Include the Header Row In The Export Else Leave out  // BMH isset
             echo $str_header;
         }
         //echo $str_export;
         echo $str_full_export;
         /***************************Begin Update records in db if selected by user***************************/
-        if ($_POST['export_test'] != 1) { //Not testing so update
-            //$db->execute('UPDATE '. TABLE_ORDERS .' SET downloaded_ship="yes" WHERE downloaded_ship="no"');
+        if ((isset($_POST['export_test'])) != 1) { //Not testing so update // BMH
+
             $orders_update_query = "UPDATE " . TABLE_ORDERS . " SET downloaded_ship='yes' WHERE downloaded_ship='no'";
             if ($_POST['start_date'] != '' && $_POST['end_date'] != '') {
                 $orders_update_query = $orders_update_query . " AND date_purchased BETWEEN '" . $start_date . "' AND '" . $end_date . "'";
@@ -693,26 +701,11 @@ while (!$orders_status->EOF) {
 <?php echo HTML_PARAMS; ?>>
 
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=<?php echo CHARSET; ?>">
-    <title><?php echo TITLE; ?></title>
-    <link rel="stylesheet" type="text/css" href="includes/stylesheet.css">
-    <link rel="stylesheet" type="text/css" href="includes/cssjsmenuhover.css" media="all" id="hoverJS">
-    <script language="javascript" src="includes/menu.js"></script>
-    <script language="javascript" src="includes/general.js"></script>
+    <?php require DIR_WS_INCLUDES . 'admin_html_head.php'; ?>
+
     <link rel="stylesheet" type="text/css" href="includes/javascript/spiffyCal/spiffyCal_v2_1.css">
     <script language="javascript" src="includes/javascript/spiffyCal/spiffyCal_v2_1.js"></script>
-    <script type="text/javascript">
-        <!--
-        function init() {
-            cssjsmenu('navbar');
-            if (document.getElementById) {
-                var kill = document.getElementById('hoverJS');
-                kill.disabled = true;
-            }
-        }
-        //
-        -->
-    </script>
+
     <style>
         #zentips {
             color: #000000;
@@ -894,16 +887,16 @@ while (!$orders_status->EOF) {
                                             <tr>
                                                 <td class="infoBoxContent">
                                                     <form name="download_csv" id="download_csv" method="post">
-                                                        <input type='button' name='checkall' value="Check / Uncheck All" onclick='checkedAll(download_csv);'><br /><br />
-                                                        <?php echo zen_draw_checkbox_field('export_test', '1', $export_test_checked . 'checked'); ?> &nbsp;<?php echo TEXT_RUNIN_TEST_FIELD; ?><br />
-                                                        <?php echo zen_draw_checkbox_field('split_name', '1', $export_split_checked . 'checked'); ?> &nbsp;<?php echo TEXT_SPLIT_NAME_FIELD; ?><br />
+                                                        <input type='button' name='checkall' value="Check / Uncheck All" onclick='checkedAll(download_csv);'><br><br>
+                                                        <?php echo zen_draw_checkbox_field('export_test', '1', $export_test_checked . 'checked'); ?> &nbsp;<?php echo TEXT_RUNIN_TEST_FIELD; ?><br>
+                                                        <?php echo zen_draw_checkbox_field('split_name', '1', $export_split_checked . 'checked'); ?> &nbsp;<?php echo TEXT_SPLIT_NAME_FIELD; ?><br>
                                                         <!--  Order Status:
-                                                                    <?php echo zen_draw_pull_down_menu('date_status', $status_array, $_POST['date_status'] ?? '', 'id="date_status"'); ?><br/>
+                                                                    <?php echo zen_draw_pull_down_menu('date_status', $status_array, $_POST['date_status'] ?? '', 'id="date_status"'); ?><br>
                                                                  -->
-                                                        <?php echo zen_draw_checkbox_field('include_header_row', '1', $export_header_row_checked . 'checked'); ?> &nbsp;<?php echo TEXT_HEADER_ROW_FIELD; ?><br /><br> <!-- BMH -->
+                                                        <?php echo zen_draw_checkbox_field('include_header_row', '1', $export_header_row_checked . 'checked'); ?> &nbsp;<?php echo TEXT_HEADER_ROW_FIELD; ?><br><br> <!-- BMH -->
                                                         <?php echo TEXT_EMAIL_EXPORT_FORMAT; ?><?php echo zen_draw_pull_down_menu('format', $available_export_formats, $format); ?>
 
-                                                        <hr />
+                                                        <hr>
                                                         <table border="0" cellspacing="0" cellpadding="2">
                                                             <tr>
                                                                 <td><strong>Automatic Email Options</strong>
@@ -911,7 +904,7 @@ while (!$orders_status->EOF) {
                                                             </tr>
                                                             <tr>
                                                                 <td>
-                                                                    <input type="checkbox" name="savetofile" value="0">Save file to server and automatically email to supplier.<br />
+                                                                    <input type="checkbox" name="savetofile" value="0">Save file to server and automatically email to supplier.<br>
                                                                     (if not saving to server you will be promoted to download the file to your computer.)
                                                                 </td>
                                                             </tr>
@@ -922,10 +915,10 @@ while (!$orders_status->EOF) {
                                                                 <td>Email Subject Line:&nbsp;<input type="text" name="auto_email_subject" value="<?php echo EMAIL_EXPORT_SUBJECT ?>"> </td>
                                                             </tr>
                                                         </table>
-                                                        <hr />
+                                                        <hr>
                                                         <table border="0" cellspacing="0" cellpadding="2">
                                                             <tr>
-                                                                <td><strong>Update Order Status on Export</strong><br />(If this is set then the order status will update to what you select here after a successful export.) </td>
+                                                                <td><strong>Update Order Status on Export</strong><br>(If this is set then the order status will update to what you select here after a successful export.) </td>
                                                             </tr>
                                                             <tr>
                                                                 <td>
@@ -936,14 +929,14 @@ while (!$orders_status->EOF) {
                                                                 </td> <!-- BMH isset($_POST['order_status_setting']) -->
                                                             </tr>
                                                         </table>
-                                                        <hr />
+                                                        <hr>
                                                         <table border="0" cellspacing="0" cellpadding="2">
                                                             <tr>
                                                                 <td><strong>Order Status Export Options</strong> </td>
                                                             </tr>
                                                             <tr>
                                                                 <td>
-                                                                    <input type="radio" name="status_target" value="1" checked>Any Order Status<br />
+                                                                    <input type="radio" name="status_target" value="1" checked>Any Order Status<br>
                                                                     <input type="radio" name="status_target" value="2">Assigned Order Status (select below)
                                                                 </td>
                                                             </tr>
@@ -963,40 +956,40 @@ while (!$orders_status->EOF) {
                                                             </tr>
                                                             <tr>
                                                                 <td><?php echo zen_draw_checkbox_field('dload_include', '1', $dload_include_checked . 'checked'); ?>
-                                                                    &nbsp;<?php echo TEXT_PREVIOUS_EXPORTS_FIELD; ?> <br /><br />
+                                                                    &nbsp;<?php echo TEXT_PREVIOUS_EXPORTS_FIELD; ?> <br><br>
                                                                 </td>
                                                             </tr>
                                                         </table>
                                                         <hr>
-                                                        <?php echo TEXT_FILE_LAYOUT; ?><br />
-                                                        <?php echo zen_draw_radio_field('filelayout', '1') ?> &nbsp;<?php echo TEXT_FILE_LAYOUT_OPR_FIELD; ?><br />
-                                                        <?php echo zen_draw_radio_field('filelayout', '2', 'checked')  ?> &nbsp;<?php echo TEXT_FILE_LAYOUT_PPR_FIELD; ?><br />
+                                                        <?php echo TEXT_FILE_LAYOUT; ?><br>
+                                                        <?php echo zen_draw_radio_field('filelayout', '1') ?> &nbsp;<?php echo TEXT_FILE_LAYOUT_OPR_FIELD; ?><br>
+                                                        <?php echo zen_draw_radio_field('filelayout', '2', 'checked')  ?> &nbsp;<?php echo TEXT_FILE_LAYOUT_PPR_FIELD; ?><br>
                                                         <hr>
-                                                        <?php echo TEXT_ADDITIONAL_FIELDS; ?><br />
+                                                        <?php echo TEXT_ADDITIONAL_FIELDS; ?><br>
                                                         <!-- BMH rearranged field order -->
-                                                        <?php echo zen_draw_checkbox_field('shiptotal', '1', $shipping_total_checked . 'checked'); ?>&nbsp;<?php echo TEXT_SHIPPING_TOTAL_FIELD; ?><br />
-                                                        <?php echo zen_draw_checkbox_field('order_total', '1', $order_total_checked . 'checked'); ?>&nbsp;<?php echo TEXT_ORDER_TOTAL_FIELD; ?><br />
-                                                        <?php echo zen_draw_checkbox_field('date_purchased', '1', $date_purchased_checked . 'checked'); ?>&nbsp;<?php echo TEXT_ORDER_DATE_FIELD; ?><br />
-                                                        <?php echo zen_draw_checkbox_field('order_tax', '1', $order_tax_checked . 'checked'); ?>&nbsp;<?php echo TEXT_TAX_AMOUNT_FIELD; ?><br />
-                                                        <?php echo zen_draw_checkbox_field('order_subtotal', '1', $order_subtotal_checked . 'checked'); ?>&nbsp;<?php echo TEXT_SUBTOTAL_FIELD; ?><br />
-                                                        <?php echo zen_draw_checkbox_field('order_discount', '1', $order_discount_checked . 'checked'); ?>&nbsp;<?php echo TEXT_DISCOUNT_FIELD; ?><br />
-                                                        <?php echo zen_draw_checkbox_field('payment_method', '1', $order_pmethod_checked . 'checked'); ?>&nbsp;<?php echo TEXT_PAYMENT_METHOD_FIELD; ?><br />
-                                                        <hr />
-                                                        <?php echo zen_draw_checkbox_field('shipmethod', '1', $shipping_method_checked); ?>&nbsp;<?php echo TEXT_SHIPPING_METHOD_FIELD; ?><br />
-                                                        <?php echo zen_draw_checkbox_field('order_comments', '1', $order_comments_checked); ?>&nbsp;<?php echo TEXT_ORDER_COMMENTS_FIELD; ?><br />
-                                                        <?php echo zen_draw_checkbox_field('customers_telephone', '1', $phone_number_checked); ?>&nbsp;<?php echo TEXT_PHONE_NUMBER_FIELD; ?><br />
-                                                        <?php echo zen_draw_checkbox_field('orders_status_export', '1', $order_status_checked); ?>&nbsp;<?php echo TEXT_ORDER_STATUS_FIELD; ?><br />
-                                                        <?php echo zen_draw_checkbox_field('iso_country2_code', '1', $iso_country2_code_checked); ?>&nbsp;<?php echo TEXT_ISO_COUNTRY2_FIELD; ?><br />
-                                                        <?php echo zen_draw_checkbox_field('iso_country3_code', '1', $iso_country3_code_checked); ?>&nbsp;<?php echo TEXT_ISO_COUNTRY3_FIELD; ?><br />
+                                                        <?php echo zen_draw_checkbox_field('shiptotal', '1', $shipping_total_checked . 'checked'); ?>&nbsp;<?php echo TEXT_SHIPPING_TOTAL_FIELD; ?><br>
+                                                        <?php echo zen_draw_checkbox_field('order_total', '1', $order_total_checked . 'checked'); ?>&nbsp;<?php echo TEXT_ORDER_TOTAL_FIELD; ?><br>
+                                                        <?php echo zen_draw_checkbox_field('date_purchased', '1', $date_purchased_checked . 'checked'); ?>&nbsp;<?php echo TEXT_ORDER_DATE_FIELD; ?><br>
+                                                        <?php echo zen_draw_checkbox_field('order_tax', '1', $order_tax_checked . 'checked'); ?>&nbsp;<?php echo TEXT_TAX_AMOUNT_FIELD; ?><br>
+                                                        <?php echo zen_draw_checkbox_field('order_subtotal', '1', $order_subtotal_checked . 'checked'); ?>&nbsp;<?php echo TEXT_SUBTOTAL_FIELD; ?><br>
+                                                        <?php echo zen_draw_checkbox_field('order_discount', '1', $order_discount_checked . 'checked'); ?>&nbsp;<?php echo TEXT_DISCOUNT_FIELD; ?><br>
+                                                        <?php echo zen_draw_checkbox_field('payment_method', '1', $order_pmethod_checked . 'checked'); ?>&nbsp;<?php echo TEXT_PAYMENT_METHOD_FIELD; ?><br>
+                                                        <hr>
+                                                        <?php echo zen_draw_checkbox_field('shipmethod', '1', $shipping_method_checked); ?>&nbsp;<?php echo TEXT_SHIPPING_METHOD_FIELD; ?><br>
+                                                        <?php echo zen_draw_checkbox_field('order_comments', '1', $order_comments_checked); ?>&nbsp;<?php echo TEXT_ORDER_COMMENTS_FIELD; ?><br>
+                                                        <?php echo zen_draw_checkbox_field('customers_telephone', '1', $phone_number_checked); ?>&nbsp;<?php echo TEXT_PHONE_NUMBER_FIELD; ?><br>
+                                                        <?php echo zen_draw_checkbox_field('orders_status_export', '1', $order_status_checked); ?>&nbsp;<?php echo TEXT_ORDER_STATUS_FIELD; ?><br>
+                                                        <?php echo zen_draw_checkbox_field('iso_country2_code', '1', $iso_country2_code_checked); ?>&nbsp;<?php echo TEXT_ISO_COUNTRY2_FIELD; ?><br>
+                                                        <?php echo zen_draw_checkbox_field('iso_country3_code', '1', $iso_country3_code_checked); ?>&nbsp;<?php echo TEXT_ISO_COUNTRY3_FIELD; ?><br>
                                                         <?php //if (ACCOUNT_STATE == 'true') {
                                                         //echo zen_draw_checkbox_field('abbr_state_code', '1', $abbr_state_code_checked);
                                                         ?> <!-- nbsp; --><?php //echo TEXT_STATE_ABBR_FIELD;
                                                                             //}
-                                                                            ?> <!-- <br/> -->
+                                                                            ?> <!-- <br> -->
                                                         <hr>
                                                         <?php echo zen_draw_checkbox_field('product_details', '1', $prod_details_checked . 'checked'); ?> &nbsp;<?php echo TEXT_PRODUCT_DETAILS_FIELD; ?>
-                                                        <span style="color: #ff0000"><strong>*</strong></span><br />
-                                                        <hr />
+                                                        <span style="color: #ff0000"><strong>*</strong></span><br>
+                                                        <hr>
                                                         <table border="0" cellspacing="0" cellpadding="2" width="100%" id="tbl_date_custom">
                                                             <tr>
                                                                 <!--<td class="smallText" colspan="2">-->
