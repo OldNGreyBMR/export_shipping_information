@@ -9,10 +9,10 @@
  * @version $Id: shipping_export.php, v 1.3.2 08.05.2010 11:41 Eric Leuenberger econcepts@zencartoptimization.com$
  * Thanks to dhcernese and Scott Wilson (That Software Guy) for contributing various portions that contained several bug-fixes.
  */
-//  $Id: lang.shipping_export.php  2023-12-20 OldNGrey $
+//  $Id: lang.shipping_export.php  2024-11-30 OldNGrey $
 
 $define = [
-    'HEADING_SHIPPING_EXPORT_TITLE' => 'Export Shipping &amp; Order Information' ,
+    'HEADING_SHIPPING_EXPORT_TITLE' => 'Export Shipping + Order Information' ,
     'HEADING_ADDITIONAL_FIELDS_TITLE' => 'Additional Fields and Options' ,
     'HEADING_CUSTOM_DATE_TITLE' => 'Custom Date Range' ,
     'HEADING_PREVIOUS_EXPORTS_TITLE' => 'Previous Exports Inclusion' ,
