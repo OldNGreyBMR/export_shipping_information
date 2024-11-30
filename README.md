@@ -4,7 +4,7 @@ Module Name
 
 Version Date
 ============
-V1.5.3 2024-11-19
+V1.5.3 2024-11-30
 
 Updated by:
 =======
@@ -45,6 +45,11 @@ Changes
 =======
 Version Date
 ============
+BMH 2024-11-30
+    check each optional array key eg tickboxes; tidy up html; 
+    correct bugfix; 
+    check for order with no products (products previously deleted);
+    fix headers 
 BMH 2024-11-19
 	check each optional array key eg tickboxes; tidy up html
 BMH 2024-03-17
