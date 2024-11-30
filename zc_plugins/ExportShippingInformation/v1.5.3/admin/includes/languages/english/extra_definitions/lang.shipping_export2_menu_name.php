@@ -12,8 +12,8 @@
 //  You should not ever have to edit this file.         //
 //////////////////////////////////////////////////////////
 */
-// Last updated: Shippping Export II, v1.5.0
+// Last updated: Shippping Export II, v1.5.3
 $define = [
-    'BOX_TOOLS_SHIPPING_EXPORT2' => 'Export Shipping & Order Info II',
+    'BOX_TOOLS_SHIPPING_EXPORT2' => 'Export Shipping + Order Info II',
 ];
 return $define;
