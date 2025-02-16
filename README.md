@@ -4,15 +4,15 @@ Module Name
 
 Version Date
 ============
-V1.5.3 2024-11-30
+V1.5.4 2025-02-16
 
 Updated by:
 =======
-OldNGrey (BMH)
+piloujp; OldNGrey (BMH)
 
 Compatibility
 =============
-Compatible with Zen Cart v1.5.8a and v2.0.1 v2.1.0 PHP 8.0 to PHP 8.3
+Compatible with Zen Cart v1.5.8a, v2.0.1, v2.1.0 PHP 8.2 to PHP 8.4
 http://www.zen-cart.com
 
 Support Thread
@@ -44,6 +44,9 @@ Changes
 =======
 Version Date
 ============
+piloujp 2025-02-16
+    Replaced all hard coded language strings by constants for internationalization
+    Auto install SQL query
 BMH 2024-11-30
     check each optional array key eg tickboxes; tidy up html; 
     correct bugfix; 
