@@ -31,12 +31,11 @@ bulk printing of labels, bulk printing of envelopes, etc., you get the idea.
 _ _Install / Upgrade for zc 1.5.8+
 ===============================
 1	If you have installed a previous version on zc 1.5.8 look at your master copy and remove all of the files.
-	Copy the v1.5.8/zc-plugins folder to your site
+	Copy the ../zc-plugins folder to your site
 	Log into Admin > Modules > Plugin Manager locate Export Shipping & Order Information and install
 
 2	New Install
-	Copy the v1.5.8/zc-plugins folder to your site
-	Log into Admin and run the install.sql files through admin > Tools > Install SQL Patches
+	Copy the ../zc-plugins folder to your site
 	Log into Admin > Modules > Plugin Manager locate Export Shipping & Order Information and install
 
 3. Enjoy!
