@@ -822,30 +822,25 @@ $body_onload = ($admin_html_head_supported === true) ? '' : ' onload="init();"';
                                                                     cellpadding="0">
                                                                     <tr class="dataTableHeadingRow">
                                                                         <td class="dataTableHeadingContent"
-                                                                            align="center" valign="top">Order<br>ID</td>
+                                                                            align="center" valign="top"><?= HEADING_ORDER_INFOS_ORDER_ID ?></td>
                                                                         <td class="dataTableHeadingContent"
-                                                                            align="center" valign="top">Email</td>
+                                                                            align="center" valign="top"><?= HEADING_ORDER_INFOS_EMAIL ?></td>
                                                                         <td class="dataTableHeadingContent"
-                                                                            align="center" valign="top">Customer<br>Name
-                                                                        </td>
+                                                                            align="center" valign="top"><?= HEADING_ORDER_INFOS_CUSTOMER_NAME ?></td>
                                                                         <td class="dataTableHeadingContent"
-                                                                            align="center" valign="top">Company</td>
+                                                                            align="center" valign="top"><?= HEADING_ORDER_INFOS_COMPANY ?></td>
                                                                         <td class="dataTableHeadingContent"
-                                                                            align="center" valign="top">
-                                                                            Delivery<br>Street</td>
+                                                                            align="center" valign="top"><?= HEADING_ORDER_INFOS_DELIVERY_STREET ?></td>
                                                                         <td class="dataTableHeadingContent"
-                                                                            align="center" valign="top">
-                                                                            Delivery<br>Suburb</td>
+                                                                            align="center" valign="top"><?= HEADING_ORDER_INFOS_DELIVERY_SUBURB ?></td>
                                                                         <td class="dataTableHeadingContent"
-                                                                            align="center" valign="top">Delivery<br>City
-                                                                        </td>
+                                                                            align="center" valign="top"><?= HEADING_ORDER_INFOS_DELIVERY_CITY ?></td>
                                                                         <td class="dataTableHeadingContent"
-                                                                            align="center" valign="top">Post<br>Code
-                                                                        </td>
+                                                                            align="center" valign="top"><?= HEADING_ORDER_INFOS_POST_CODE ?></td>
                                                                         <td class="dataTableHeadingContent"
-                                                                            align="center" valign="top">State</td>
+                                                                            align="center" valign="top"><?= HEADING_ORDER_INFOS_STATE ?></td>
                                                                         <td class="dataTableHeadingContent"
-                                                                            align="center" valign="top">Country</td>
+                                                                            align="center" valign="top"><?= HEADING_ORDER_INFOS_COUNTRY ?></td>
                                                                         <td class="dataTableHeadingContent"
                                                                             align="center" valign="top">&nbsp;</td>
                                                                     </tr>
@@ -931,12 +926,11 @@ $body_onload = ($admin_html_head_supported === true) ? '' : ' onload="init();"';
                                                                         ?>
                                                                         <tr class="dataTableRow">
                                                                             <td class="dataTableContent" align="center"
-                                                                                colspan="30"><b>No new orders were
-                                                                                    found!</b></td>
+                                                                                colspan="30"><?= ERROR_ORDER_INFOS_NO_DATA ?></td>
                                                                         </tr>
                                                                     <?php } ?>
                                                                     <?php
-                                                                    $SUBMIT_BUTTON = "<input style=\"font-weight: bold\" name=\"download_csv\" type=\"submit\" value=\"Export to Excel Spreadsheet\" />";
+                                                                    $SUBMIT_BUTTON = "<input style=\"font-weight: bold\" name=\"download_csv\" type=\"submit\" value=\"" . SUBMIT_BUTTON_ORDER_INFOS_EXPORT . "\" />";
                                                                     ?>
                                                             </td>
                                                         </tr>
@@ -963,7 +957,7 @@ $body_onload = ($admin_html_head_supported === true) ? '' : ' onload="init();"';
                                                         <tr>
                                                             <td class="infoBoxContent">
                                                                 <form name="download_csv" id="download_csv" method="post">
-                                                                    <input type='button' name='checkall' value="Check / Uncheck All+" onclick='checkedAll(download_csv)'><br><br>
+                                                                    <input type='button' name='checkall' value="<?= CHECK_BUTTON_ORDER_INFOS_EXPORT ?>" onclick='checkedAll(download_csv)'><br><br>
                                                                     <?php echo zen_draw_checkbox_field('export_test', '1', $export_test_checked . 'checked'); ?> &nbsp; <?php echo TEXT_RUNIN_TEST_FIELD; ?><br>
                                                                     <?php echo zen_draw_checkbox_field('split_name', '1', $export_split_checked . 'checked'); ?> &nbsp;
                                                                     <?php echo TEXT_SPLIT_NAME_FIELD; ?><br>
@@ -980,47 +974,39 @@ $body_onload = ($admin_html_head_supported === true) ? '' : ' onload="init();"';
                                                                     <hr />
                                                                     <table border="0" cellspacing="0" cellpadding="2">
                                                                         <tr>
-                                                                            <td><strong>Automatic Email Options</strong>
+                                                                            <td><?= HEADING_AUTOMATIC_EMAIL_OPTION_TITLE ?>
                                                                             </td>
                                                                         </tr>
                                                                         <tr>
                                                                             <td>
                                                                                 <input type="checkbox" name="savetofile"
-                                                                                    value="0">Save file to server and
-                                                                                automatically email to supplier.<br>
-                                                                                (if not saving to server you will be
-                                                                                promoted to download the file to your
-                                                                                computer.)
+                                                                                    value="0"><?= TEXT_AUTOMATIC_EMAIL_OPTION_FIELD ?>
                                                                             </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td>Suppliers Email Address:&nbsp;<input
+                                                                            <td><?= TEXT_EMAIL_EXPORT_ADDRESS_FIELD ?><input
                                                                                     type="text"
                                                                                     name="auto_email_supplier"
-                                                                                    value="<?php echo EMAIL_EXPORT_ADDRESS ?>">
+                                                                                    value="<?= EMAIL_EXPORT_ADDRESS ?>">
                                                                             </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td>Email Subject Line:&nbsp;<input
+                                                                            <td><?= TEXT_EMAIL_EXPORT_SUBJECT_FIELD ?><input
                                                                                     type="text"
                                                                                     name="auto_email_subject"
-                                                                                    value="<?php echo EMAIL_EXPORT_SUBJECT ?>">
+                                                                                    value="<?= EMAIL_EXPORT_SUBJECT ?>">
                                                                             </td>
                                                                         </tr>
                                                                     </table>
                                                                     <hr />
                                                                     <table border="0" cellspacing="0" cellpadding="2">
                                                                         <tr>
-                                                                            <td><strong>Update Order Status on
-                                                                                    Export</strong><br>(If this is set
-                                                                                then the order status will update to
-                                                                                what you select here after a successful
-                                                                                export.) </td>
+                                                                            <td><?= HEADING_UPDATE_ORDER_STATUS_TITLE ?></td>
                                                                         </tr>
                                                                         <tr>
                                                                             <td>
                                                                                 <?php echo zen_draw_checkbox_field('status_setting', '', $order_status_setting_checked); ?>
-                                                                                Set Order Status After Export to&nbsp;
+                                                                                <?= TEXT_UPDATE_ORDER_STATUS_FIELD ?>
                                                                                 <!-- </td>  </tr>  <tr>   <td> -->
                                                                                 <?php echo zen_draw_pull_down_menu('order_status_setting' ?? '', $status_array, isset($_POST['order_status_setting']), '1', 'id="order_status_setting"'); ?>
                                                                             </td>
@@ -1029,17 +1015,14 @@ $body_onload = ($admin_html_head_supported === true) ? '' : ' onload="init();"';
                                                                     <hr />
                                                                     <table border="0" cellspacing="0" cellpadding="2">
                                                                         <tr>
-                                                                            <td><strong>Order Status Export
-                                                                                    Options</strong> </td>
+                                                                            <td><?= HEADING_ORDER_STATUS_OPTIONS_TITLE ?></td>
                                                                         </tr>
                                                                         <tr>
                                                                             <td>
                                                                                 <input type="radio" name="status_target"
-                                                                                    value="1" checked>Any Order
-                                                                                Status<br>
+                                                                                    value="1" checked><?= TEXT_ORDER_STATUS_OPTIONS_ANY_FIELD ?><br>
                                                                                 <input type="radio" name="status_target"
-                                                                                    value="2">Assigned Order Status
-                                                                                (select below)
+                                                                                    value="2"><?= TEXT_ORDER_STATUS_OPTIONS_ASSIGNED_FIELD ?>
                                                                             </td>
                                                                         </tr>
                                                                         <tr>
