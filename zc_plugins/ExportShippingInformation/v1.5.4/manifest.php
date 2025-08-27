@@ -1,6 +1,6 @@
 <?php
 return [
-    'pluginVersion' => 'v1.5.3',
+    'pluginVersion' => 'v1.5.4',
     'pluginName' => 'Export Shipping + Order Information II',
     'pluginDescription' => 'Export your Zen Cart Order Shipping Information to CSV format for use in external programs.',
     'pluginAuthor' => 'OldNGrey (BMH)',
