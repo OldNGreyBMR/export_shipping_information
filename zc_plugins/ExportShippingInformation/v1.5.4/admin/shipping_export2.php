@@ -21,6 +21,7 @@ declare(strict_types=1);
  *                  distinguish builds EISVersion_II label
  * Version: 1.5.3 check each optional array key eg tickboxes; tidy up html; correct bugfix; check for order with no products (products previously deleted);
  *                fix headers ref https://docs.zen-cart.com/dev/plugins/admin_head_content/
+ * Version 1.5.4 2025-03-08 ln658 msg to zen_email must be array; ln1030 correct params to pull down
  */
 if (!isset($success_message))               { $success_message = '';}
 if (!isset($linevalue))                     { $linevalue = '';}
@@ -49,8 +50,8 @@ if (!isset($iso_country3_code_checked))     { $iso_country3_code_checked = '';}
 if (!isset($prod_details_checked))          { $prod_details_checked = '';}
 if (!isset($dload_include))                 { $dload_include = '';}
 
-define('VERSION', '1.5.3');
-define('ESIVERSION', '1.5.3');
+define('VERSION', '1.5.4');
+define('ESIVERSION', '1.5.4');
 require('includes/application_top.php');
 require(DIR_WS_CLASSES . 'currencies.php');
 $currencies = new currencies();
