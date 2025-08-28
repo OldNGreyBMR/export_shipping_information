@@ -4,6 +4,10 @@ Module Name
 
 Version Date
 ============
+V1.5.5 2025-08-29
+
+Version Date
+============
 V1.5.4 2025-02-16
 
 Updated by:
@@ -44,6 +48,8 @@ Changes
 =======
 Version Date
 ============
+BMH 2025-08-28
+	bugfix - check subtotal
 piloujp 2025-02-16
     Replaced all hard coded language strings by constants for internationalization
     Auto install SQL query
@@ -120,9 +126,4 @@ Order Subtotal
 Order Discount
 Payment Method
 Full Product Details *
-
-
-
-
-
 
