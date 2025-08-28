@@ -21,6 +21,8 @@ declare(strict_types=1);
  *                  distinguish builds EISVersion_II label
  * Version: 1.5.3 check each optional array key eg tickboxes; tidy up html; correct bugfix; check for order with no products (products previously deleted);
  *                fix headers ref https://docs.zen-cart.com/dev/plugins/admin_head_content/
+ * Version 1.5.4 2025-03-08 ln658 msg to zen_email must be array; ln1030 correct params to pull down
+ * Version 1.5.5 2025-08-28 ln521 correct error when 'Order Subtotal' is deselected;
  */
 if (!isset($success_message))               { $success_message = '';}
 if (!isset($linevalue))                     { $linevalue = '';}
@@ -49,8 +51,8 @@ if (!isset($iso_country3_code_checked))     { $iso_country3_code_checked = '';}
 if (!isset($prod_details_checked))          { $prod_details_checked = '';}
 if (!isset($dload_include))                 { $dload_include = '';}
 
-define('VERSION', '1.5.3');
-define('ESIVERSION', '1.5.3');
+define('VERSION', '1.5.5');
+define('ESIVERSION', '1.5.5');
 require('includes/application_top.php');
 require(DIR_WS_CLASSES . 'currencies.php');
 $currencies = new currencies();
@@ -258,13 +260,13 @@ if (isset($_POST['download_csv'])) {
 
         $max_products = $max_num_products_result->fields['max_num_of_products'];
 
-        //if (ESI_DEBUG == 'Yes') echo '<br> ln214 $max_products= ' . $max_products; //BMH DEBUG
+        //if (ESI_DEBUG == 'Yes') echo '<br> ln263 $max_products= ' . $max_products; //BMH DEBUG
     } // End File layout sql
 
     $order_details = $db->Execute($order_info);     // run the sql
 
     /******************Begin Set Header Row Information*****************************/
-    //if (ESI_DEBUG == 'Yes') echo '<br> ln220 begin headers' . " \n"; //BMH DEBUG
+    //if (ESI_DEBUG == 'Yes') echo '<br> ln269 begin headers' . " \n"; //BMH DEBUG
     $str_header = "Order ID,Customer Email";
 
     if (isset($_POST['split_name']) == 1) { //If name split is desired then split it. //BMH 153
@@ -284,9 +286,9 @@ if (isset($_POST['download_csv'])) {
 
     //if (($_POST['product_details']) == 1 ) { // add to header row
     if ((!empty($_POST['product_details']) ? $_POST['product_details'] : 0) == 1) { // BMH  if unticked add to header row) ? == 1 ) { // add to header row
-         if (ESI_DEBUG == 'Yes') echo '<br> ln287 filelayout= ' . $_POST['filelayout'] . " \n"; //BMH DEBUG
+         if (ESI_DEBUG == 'Yes') echo '<br> ln289 filelayout= ' . $_POST['filelayout'] . " \n"; //BMH DEBUG
         if (($_POST['filelayout']) == 2) { // 1 Product Per row RADIO
-            if (ESI_DEBUG == 'Yes') echo '<br> ln289 product filelayout= ' . $_POST['filelayout'] . " \n"; //BMH DEBUG
+            if (ESI_DEBUG == 'Yes') echo '<br> ln291 product filelayout= ' . $_POST['filelayout'] . " \n"; //BMH DEBUG
             $str_header = $str_header . ",Product Qty,Product Model,Product Name,Product Attributes,Products Price"; //BMH reposition attributes
             $str_header = $str_header . ",Line cost";
             $str_header = $str_header . ",Line tax";
@@ -453,23 +455,23 @@ if (isset($_POST['download_csv'])) {
 
             $orders_subtotal = $db->Execute($orders_subtotal_query);    // run sql
 
+            $num_rows = $orders_subtotal->RecordCount();                // how many are returned
+            // BMH subtotal
         } // eof sub-totals
 
         if (!empty($_POST['product_details']) == 1) {     // Order details should be added to the export string.
-            if (ESI_DEBUG == 'Yes') {echo '<br> ln459 product_details=1 ' . " \n"; } //BMH DEBUG
+            if (ESI_DEBUG == 'Yes') {echo '<br> ln463 product_details=1 ' . " \n"; } //BMH DEBUG
             if (isset($_POST['filelayout']) == 2) {      // 1 PPR RADIO         // BMH 153
-                if (ESI_DEBUG == 'Yes') { echo '<br> ln461 filelayout = 2 is ' . $_POST['filelayout'] . "\n"; } //BMH DEBUG
+                if (ESI_DEBUG == 'Yes') { echo '<br> ln469 filelayout = 2 is ' . $_POST['filelayout'] . "\n"; } //BMH DEBUG
                 // bmh CHANGE ORDER of fields
-                if (!isset($linevalue))
-                    $linevalue = 0;   // BMH calc line cost ; change from defined to isset
-                if (!isset($linetax))
-                    $linetax = 0;       // BMH calc line tax
+                if (!isset($linevalue)) $linevalue = 0;   // BMH calc line cost ; change from defined to isset
+                if (!isset($linetax))   $linetax = 0;       // BMH calc line tax
                 //BMH if no product in the Order
                 if (isset($order_details->fields['orders_products_id']) <> '' ) {   //BMH 153x
                     $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['products_quantity'] . $FIELDEND;
                     $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['products_model'] . $FIELDEND;
                 } else {  // BMH end product qty Check
-                    if (ESI_DEBUG == 'Yes') { echo '<br> ln472 no product in order' ."\n"; } //BMH DEBUG
+                    if (ESI_DEBUG == 'Yes') { echo '<br> ln474 ERROR in data. No product in order #' . $order_details->fields['orders_id']  ." \n"; } //BMH DEBUG
                 }
                 //$str_export .= $FIELDSEPARATOR . $FIELDSTART . (str_replace('"', "", $order_details->fields['products_name'] ?? '')) . $FIELDEND; // replace quotes with space if present
 
@@ -508,9 +510,8 @@ if (isset($_POST['download_csv'])) {
                     }
                     // BMH eof attributes
                 }
-                // BMH end check for product
-
-                $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['final_price'] . $FIELDEND;
+                
+                $str_export .= $FIELDSEPARATOR . $FIELDSTART . $order_details->fields['final_price' ?? '0'] . $FIELDEND;
                 // BMH calc product line value and tax
                 $linevalue = $order_details->fields['products_quantity'] * $order_details->fields['final_price'];
                 $linetax = $order_details->fields['products_tax'] / 100 * $order_details->fields['final_price'];
@@ -518,12 +519,15 @@ if (isset($_POST['download_csv'])) {
                 $str_export .= $FIELDSEPARATOR . $FIELDSTART . $linetax . $FIELDEND;
                 // BMH
 
-                $num_rows = $orders_subtotal->RecordCount();                // how many are returned
+                $num_rows = 0;
+                if(isset($_POST['order_subtotal']) == 1) {      // BMH isset check sub-total is selected    
+                    $num_rows = $orders_subtotal->RecordCount();                // how many are returned // 
+                }
                 if ($num_rows > 0) {
                     $str_export .= $FIELDSEPARATOR . $FIELDSTART . $orders_subtotal->fields['value'] . $FIELDEND; //add subtotal amt to export string
-                } else { // add a BLANK field to the export file for "consistency"
-                    $str_export .= $FIELDSEPARATOR . $FIELDSTART . $FIELDEND; // add blank space for filler
-                } // end if
+                } //else { // add a BLANK field to the export file for "consistency"
+                  //  $str_export .= $FIELDSEPARATOR . $FIELDSTART . $FIELDEND; // add blank space for filler
+                //} // end if
 
             } else { // 1 OPR
                 if (ESI_DEBUG == 'Yes')
@@ -641,7 +645,7 @@ if (isset($_POST['download_csv'])) {
 
     /**************************************Process the export file**************************************************/
     if ($save_to_file_checked == 1) { // saving to a file for email attachement, so write and ready else do regular output (prompt for download)
-        // Do not set headers becuase we are going to email the file to the supplier.
+        // Do not set headers because we are going to email the file to the supplier.
         //open output file for writing
         $f = fopen(DIR_FS_EMAIL_EXPORT . $file, 'w+');
         //fwrite($f,$str_export);
@@ -655,7 +659,11 @@ if (isset($_POST['download_csv'])) {
         unset($f);
         //Email File to Supplier
         // send the email
-        zen_mail('Supplier Name', $to_email_address, $email_subject, EMAIL_EXPORT_BODY, STORE_NAME, EMAIL_FROM, $html_msg, 'default', DIR_FS_EMAIL_EXPORT . $file);
+        $block = ['EMAIL_MESSAGE_HTML' => $html_msg];   // BMH 2025-03-07
+        $filename = DIR_FS_EMAIL_EXPORT . $file;        // BMH 2025-03-07
+        $attachments_list[] = $filename;
+        echo '<br> ln661 filename= ' . $filename; //BMH DEBUG 
+        zen_mail('Supplier Name', $to_email_address, $email_subject, EMAIL_EXPORT_BODY, STORE_NAME, EMAIL_FROM, $block, 'default', $attachments_list);
         //Set Success Message
         $success_message = "<span style='color:#ff0000;font-weight:bold;font-size:14px;'>File processed successfully!</span>";
         /***************************Begin Update records in db if selected by user***************************/
@@ -827,16 +835,21 @@ $body_onload = ($admin_html_head_supported === true) ? '' : ' onload="init();"';
                                                                             align="center" valign="top"><?= HEADING_ORDER_INFOS_EMAIL ?></td>
                                                                         <td class="dataTableHeadingContent"
                                                                             align="center" valign="top"><?= HEADING_ORDER_INFOS_CUSTOMER_NAME ?></td>
+
                                                                         <td class="dataTableHeadingContent"
                                                                             align="center" valign="top"><?= HEADING_ORDER_INFOS_COMPANY ?></td>
                                                                         <td class="dataTableHeadingContent"
                                                                             align="center" valign="top"><?= HEADING_ORDER_INFOS_DELIVERY_STREET ?></td>
+                                                                         
                                                                         <td class="dataTableHeadingContent"
                                                                             align="center" valign="top"><?= HEADING_ORDER_INFOS_DELIVERY_SUBURB ?></td>
+                                                                         
                                                                         <td class="dataTableHeadingContent"
                                                                             align="center" valign="top"><?= HEADING_ORDER_INFOS_DELIVERY_CITY ?></td>
+                                                                       
                                                                         <td class="dataTableHeadingContent"
                                                                             align="center" valign="top"><?= HEADING_ORDER_INFOS_POST_CODE ?></td>
+                                                                       
                                                                         <td class="dataTableHeadingContent"
                                                                             align="center" valign="top"><?= HEADING_ORDER_INFOS_STATE ?></td>
                                                                         <td class="dataTableHeadingContent"
@@ -930,7 +943,7 @@ $body_onload = ($admin_html_head_supported === true) ? '' : ' onload="init();"';
                                                                         </tr>
                                                                     <?php } ?>
                                                                     <?php
-                                                                    $SUBMIT_BUTTON = "<input style=\"font-weight: bold\" name=\"download_csv\" type=\"submit\" value=\"" . SUBMIT_BUTTON_ORDER_INFOS_EXPORT . "\" />";
+                                                                    $SUBMIT_BUTTON = "<input style=\"font-weight: bold\" name=\"download_csv\" type=\"submit\" value=\"Export to Excel Spreadsheet\" />";
                                                                     ?>
                                                             </td>
                                                         </tr>
@@ -1008,13 +1021,15 @@ $body_onload = ($admin_html_head_supported === true) ? '' : ' onload="init();"';
                                                                                 <?php echo zen_draw_checkbox_field('status_setting', '', $order_status_setting_checked); ?>
                                                                                 <?= TEXT_UPDATE_ORDER_STATUS_FIELD ?>
                                                                                 <!-- </td>  </tr>  <tr>   <td> -->
-                                                                                <?php echo zen_draw_pull_down_menu('order_status_setting' ?? '', $status_array, isset($_POST['order_status_setting']), '1', 'id="order_status_setting"'); ?>
+                                                                                    <?= 'ln 1021'; // BMH DEBUG ?>
+                                                                                <?php echo zen_draw_pull_down_menu('order_status_setting', $status_array,  '', ' ', isset($_POST['order_status_setting']) ); ?>
                                                                             </td>
                                                                         </tr>
                                                                     </table>
                                                                     <hr />
                                                                     <table border="0" cellspacing="0" cellpadding="2">
                                                                         <tr>
+
                                                                             <td><?= HEADING_ORDER_STATUS_OPTIONS_TITLE ?></td>
                                                                         </tr>
                                                                         <tr>
@@ -1023,6 +1038,7 @@ $body_onload = ($admin_html_head_supported === true) ? '' : ' onload="init();"';
                                                                                     value="1" checked><?= TEXT_ORDER_STATUS_OPTIONS_ANY_FIELD ?><br>
                                                                                 <input type="radio" name="status_target"
                                                                                     value="2"><?= TEXT_ORDER_STATUS_OPTIONS_ASSIGNED_FIELD ?>
+                                                                            
                                                                             </td>
                                                                         </tr>
                                                                         <tr>
@@ -1157,7 +1173,7 @@ $body_onload = ($admin_html_head_supported === true) ? '' : ' onload="init();"';
                                                     <table border="0" width="100%" cellspacing="0" cellpadding="2">
                                                         <tr>
                                                             <td class="smallText" valign="top">
-                                                                <?php echo $order_pages->display_count($rows, MAX_DISPLAY_SEARCH_RESULTS_REPORTS, $_GET['page'], 'Displaying <b>%d</b> to <b>%d</b> (of <b>%d</b> orders)'); ?>
+                                                                <?php echo $order_pages->display_count($rows, (int)MAX_DISPLAY_SEARCH_RESULTS_REPORTS, $_GET['page'], 'Displaying <b>%d</b> to <b>%d</b> (of <b>%d</b> orders)'); ?>
                                                             </td>
                                                             <td class="smallText" align="right">
                                                                 <?php echo $order_pages->display_links($rows, MAX_DISPLAY_SEARCH_RESULTS_REPORTS, MAX_DISPLAY_PAGE_LINKS, $_GET['page']); ?>
