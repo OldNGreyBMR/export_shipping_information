@@ -4,6 +4,10 @@ Module Name
 
 Version Date
 ============
+V1.5.6 2025-09-01
+
+Version Date
+============
 V1.5.5 2025-08-29
 
 Version Date
@@ -34,13 +38,16 @@ bulk printing of labels, bulk printing of envelopes, etc., you get the idea.
 ==============
 _ _Install / Upgrade for zc 1.5.8+
 ===============================
-1	If you have installed a previous version on zc 1.5.8 look at your master copy and remove all of the files.
+1	If you have installed a previous version on zc1.5.8+, 
+    Copy the ../zc-plugins folder to your site
+	Log into Admin > Modules > Plugin Manager locate Export Shipping & Order Information and installgo Admin > Modules > Plugin Manager uselook at your master copy and remove all of the files.
 	Copy the ../zc-plugins folder to your site
-	Log into Admin > Modules > Plugin Manager locate Export Shipping & Order Information and install
-
+	Log into Admin > Modules > Plugin Manager, locate 'Export Shipping & Order Information' click Un-Install and Un-Install again
+    locate 'Export Shipping & Order Information' click Install and select v1.5.6 and click 'Install' again
+    
 2	New Install
 	Copy the ../zc-plugins folder to your site
-	Log into Admin > Modules > Plugin Manager locate Export Shipping & Order Information and install
+	Log into Admin > Modules > Plugin Manager locate 'Export Shipping & Order Information II' and install
 
 3. Enjoy!
 
@@ -48,6 +55,8 @@ Changes
 =======
 Version Date
 ============
+BMH 2025-09-01
+    logic correction so one order per row  + product details works as expected
 BMH 2025-08-28
 	bugfix - check subtotal
 piloujp 2025-02-16
