@@ -8,7 +8,8 @@ declare(strict_types=1);
  * @copyright Portions Copyright 2003-2023 Zen Cart Development Team
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: shipping_export.php, v 1.3.2 08.05.2010 11:41 Eric Leuenberger econcepts@zencartoptimization.com$
- * Thanks to dhcernese and Scott Wilson (That Software Guy) for contributing various portions that contained several bug-fixes.
+ * Thanks to:   dhcernese and Scott Wilson (That Software Guy) for contributing various portions that contained several bug-fixes.
+ *              piloujp for auto install of database field if required and converting all hardcoded text to constants
  * Version: 1.4.0 2023-12-20 BMH (OldNGrey)
  * Version: 1.5.0 2023-12-21 Convert to admin zc_plugins format for zc 1.5.8; Renamed files to shipping_export2 for zc_plugins folder
  * Version: 1.5.0.a 2024-02-16 remove ASC from all group by statements issue #4 resolved
@@ -23,7 +24,8 @@ declare(strict_types=1);
  *                fix headers ref https://docs.zen-cart.com/dev/plugins/admin_head_content/
  * Version 1.5.4 2025-03-08 ln658 msg to zen_email must be array; ln1030 correct params to pull down
  * Version 1.5.5 2025-08-28 ln521 correct error when 'Order Subtotal' is deselected;
- */
+ * Version 1.5.6 2025-08-29 correct logic error preventing 1 order per row and full product details
+ * */
 if (!isset($success_message))               { $success_message = '';}
 if (!isset($linevalue))                     { $linevalue = '';}
 if (!isset($html_msg))                      { $html_msg = '';}
@@ -51,13 +53,13 @@ if (!isset($iso_country3_code_checked))     { $iso_country3_code_checked = '';}
 if (!isset($prod_details_checked))          { $prod_details_checked = '';}
 if (!isset($dload_include))                 { $dload_include = '';}
 
-define('VERSION', '1.5.5');
-define('ESIVERSION', '1.5.5');
+define('VERSION', '1.5.6');
+define('ESIVERSION', '1.5.6');
 require('includes/application_top.php');
 require(DIR_WS_CLASSES . 'currencies.php');
 $currencies = new currencies();
 include(DIR_WS_CLASSES . 'order.php');
-define('ESI_DEBUG', "No");   // No or Yes   // BMH DEBUG switch
+define('ESI_DEBUG', "Yes");   // No or Yes   // BMH DEBUG switch
 
 // change destination here for path when using "save to file on server"
 if (!defined('DIR_FS_EMAIL_EXPORT')) define('DIR_FS_EMAIL_EXPORT', DIR_FS_CATALOG . 'images/uploads/');
@@ -171,7 +173,7 @@ if (isset($_POST['download_csv'])) {
         // ++++++++++++++++ //
 
     } else { //  1 Order Per row (filelayout==1)
-        if (ESI_DEBUG == 'Yes') echo '<br> ln172 filelayout should = 1 SHOULD BE one OPR = '. $_POST['filelayout'] . " \n"; //BMH DEBUG
+        //if (ESI_DEBUG == 'Yes') //echo //'<br> ln175 filelayout should = 1 SHOULD BE one OPR = '. $_POST['filelayout'] . " \n"; //BMH DEBUG
         // BMH Added DISTINCT
         $order_info = "SELECT DISTINCT o.orders_id, customers_email_address, delivery_name, delivery_company,
             delivery_street_address, delivery_suburb, delivery_city, delivery_postcode, delivery_state,
@@ -286,9 +288,9 @@ if (isset($_POST['download_csv'])) {
 
     //if (($_POST['product_details']) == 1 ) { // add to header row
     if ((!empty($_POST['product_details']) ? $_POST['product_details'] : 0) == 1) { // BMH  if unticked add to header row) ? == 1 ) { // add to header row
-         if (ESI_DEBUG == 'Yes') echo '<br> ln289 filelayout= ' . $_POST['filelayout'] . " \n"; //BMH DEBUG
+         //if (ESI_DEBUG == 'Yes') //echo '<br> ln290 filelayout= ' . $_POST['filelayout'] . "[txt] \n"; //BMH DEBUG
         if (($_POST['filelayout']) == 2) { // 1 Product Per row RADIO
-            if (ESI_DEBUG == 'Yes') echo '<br> ln291 product filelayout= ' . $_POST['filelayout'] . " \n"; //BMH DEBUG
+            if (ESI_DEBUG == 'Yes') //echo '<br> ln292 product filelayout= ' . $_POST['filelayout'] . " \n"; //BMH DEBUG
             $str_header = $str_header . ",Product Qty,Product Model,Product Name,Product Attributes,Products Price"; //BMH reposition attributes
             $str_header = $str_header . ",Line cost";
             $str_header = $str_header . ",Line tax";
@@ -459,10 +461,11 @@ if (isset($_POST['download_csv'])) {
             // BMH subtotal
         } // eof sub-totals
 
-        if (!empty($_POST['product_details']) == 1) {     // Order details should be added to the export string.
-            if (ESI_DEBUG == 'Yes') {echo '<br> ln463 product_details=1 ' . " \n"; } //BMH DEBUG
-            if (isset($_POST['filelayout']) == 2) {      // 1 PPR RADIO         // BMH 153
-                if (ESI_DEBUG == 'Yes') { echo '<br> ln469 filelayout = 2 is ' . $_POST['filelayout'] . "\n"; } //BMH DEBUG
+        //if (!empty($_POST['product_details']) == 1) {     // Order details should be added to the export string.
+        if (isset($_POST['product_details']) && ($_POST['product_details'])== 1) {     // Order details should be added to the export string.
+            //if (ESI_DEBUG == 'Yes') {echo '<br> ln464 product_details=1 ' . " \n"  ;           } //BMH DEBUG
+            if (isset($_POST['filelayout']) && $_POST['filelayout'] == 2) {      // 1 PPR RADIO            
+                //if (ESI_DEBUG == 'Yes') { echo '<br> ln466 filelayout should be 2, and is ' . $_POST['filelayout'] . "\n"; } //BMH DEBUG
                 // bmh CHANGE ORDER of fields
                 if (!isset($linevalue)) $linevalue = 0;   // BMH calc line cost ; change from defined to isset
                 if (!isset($linetax))   $linetax = 0;       // BMH calc line tax
@@ -530,8 +533,7 @@ if (isset($_POST['download_csv'])) {
                 //} // end if
 
             } else { // 1 OPR
-                if (ESI_DEBUG == 'Yes')
-                    echo '<br> ln542 product_details = 1 & OPR' . "\n"; // BMH DEBUG
+                //if (ESI_DEBUG == 'Yes')  echo '<br> ln542 product_details = 1 & OPR' . "\n"; // BMH DEBUG
                 /**************the following exports 1 OPR w/ attributes) ****************/
                 $oID = zen_db_prepare_input($order_details->fields['orders_id']);
                 $oIDME = $order_details->fields['orders_id'];

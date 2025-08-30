@@ -19,6 +19,5 @@ class ScriptedInstaller extends ScriptedInstallBase
     protected function executeUninstall()
     {
         zen_deregister_admin_pages(['shipping_export2']);
-        //$this->executeInstallerSql("ALTER TABLE " . TABLE_ORDERS . " DROP COLUMN downloaded_ship"); // Uncomment if you want to delete this extra field when uninstalling. Data in this column will be lost.
     }
 }
